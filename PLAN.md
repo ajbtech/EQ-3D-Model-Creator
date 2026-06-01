@@ -210,12 +210,26 @@ Trade-offs: detail softens at low voxel resolution (fine for figurine scale), an
 merely touch get fused (usually desirable here).
 
 ### 6.4 Where to run it — decided: client-side WASM, with a local companion fallback
-- **A. Pure client-side WASM voxel/SDF remesh — PRIMARY.** A true voxel/SDF remesh (e.g. an
-  OpenVDB port or a marching-cubes-over-SDF we control) repairs arbitrary open/non-manifold
-  meshes and guarantees a watertight result. This is the main path. `manifold-3d` is kept only
-  as a **helper** to boolean-**union** sub-parts that are *already* closed solids — it is not
-  the repair workhorse, because game meshes are open sheets. Keeps the site fully static;
-  the main risk is performance/quality at higher voxel resolution (Section 11).
+
+**Concrete remesh stack (resolved by research spike):**
+1. **`three-mesh-bvh`** samples a **signed distance field** from the assembled + posed mesh,
+   however open/non-manifold it is. It builds a BVH and uses `bvhClosestPointToPoint()` for the
+   distance plus a ray test for inside/outside; there is a working "Fast SDF Generation" example,
+   and it can run on the GPU. This is the step that tolerates EQ's open sheets and gaps.
+2. **`manifold-3d`'s `LevelSet`** consumes that SDF (an SDF callback + bounding box + voxel edge
+   length) and extracts a **guaranteed watertight, manifold** surface — their docs note it
+   improves on plain Marching Cubes. So `manifold-3d` *is* in the primary path, but as the
+   **SDF→surface extractor**, not as a boolean-union repair tool. (Its `union`/`Merge` remain
+   useful only for sub-parts that are already closed solids.)
+
+> Dead end ruled out: the `mjurczyk/openvdb` JS port is read-only / visualization-oriented
+> (closer to NanoVDB) and is **not** a remesh tool — do not plan around an "OpenVDB WASM port."
+
+- **A. Pure client-side WASM voxel/SDF remesh — PRIMARY.** The `three-mesh-bvh` (SDF) +
+  `manifold-3d` `LevelSet` stack above repairs arbitrary open meshes and guarantees a watertight
+  result, fully in-browser. Keeps the site fully static; the main remaining risk is
+  performance/quality at higher voxel resolution — note `manifold-3d`'s WASM build runs serially
+  (no TBB threads), while the SDF sampling can be GPU-accelerated (Section 11).
 - **C. Downloadable companion — FALLBACK.** When the WASM remesh can't close a mesh, the site
   emits an assembled glTF and a small local tool (or a documented Blender Voxel-Remesh +
   3D-Print-Toolbox recipe) does the remesh. Most robust, least seamless — but still no server.
@@ -264,9 +278,11 @@ Versioned JSON, each with an explicit "sources & assumptions" note like the XP C
 ## 8. Tech stack
 - **Static site** on GitHub Pages; vanilla JS or a light framework (match the XP Calc).
 - **three.js** — glTF load, assembly, posing, preview, `STLExporter`.
-- **WASM voxel/SDF remesh** (OpenVDB port or custom marching-cubes-over-SDF) — **primary**
-  print-prep: watertight guarantee on arbitrary open meshes.
-- **manifold-3d (WASM)** — helper only: boolean union of already-solid sub-parts.
+- **`three-mesh-bvh`** — samples a signed distance field from the assembled/posed mesh (BVH
+  closest-point + inside/outside ray test; GPU-capable). First half of the **primary** print-prep.
+- **`manifold-3d` (WASM)** — `LevelSet` extracts a guaranteed-watertight manifold surface from
+  that SDF (second half of primary print-prep); its `union`/`Merge` are a secondary helper for
+  already-solid sub-parts. Note: WASM build runs serially (no TBB).
 - **LanternExtractor** — user-run, off-site, to produce glTF (MVP onramp); replaced by a WASM
   S3D parser for drag-and-drop (Phase 3.5).
 - **Downloadable companion / documented Blender recipe** — local fallback when WASM remesh can't
@@ -299,8 +315,9 @@ close the thin blade at a reasonable resolution, you've learned the real constra
 the companion fallback is mandatory) before building anything.
 
 ### Phase 1 — MVP
-Manual race/gender select, upload pre-extracted glTF, 5 poses, basic body (no equipment yet),
-voxel/union remesh, STL download, live preview.
+Manual race/gender select, upload pre-extracted glTF, 5 poses, body **+ a single held weapon**
+(the weapon path is already proven in Phase 0; full per-slot equipment is deferred to Phase 2),
+voxel remesh, STL download, live preview.
 
 ### Phase 2 — Equipment + scale
 Per-slot equipment pickers; attach weapons/shields/robes/helms via the bone+transform table;
@@ -325,10 +342,12 @@ Multi-part/multi-color export and paint-guide output; richer pose library.
   broad adoption + no-server means drag-and-drop is the only seamless onramp. Mitigated by the
   LanternExtractor-first MVP and the manual pickers as a zero-upload fallback. This is one of the
   two big front-loaded WASM bets.
-- **WASM remesh performance/quality** at higher resolution — the other big front-loaded WASM bet,
-  and the load-bearing assumption of the whole no-server plan. Fallback is the **local companion /
-  documented Blender recipe** (serverless is rejected). Phase 0's weapon spike is the early test
-  of whether WASM resolution is good enough for thin geometry.
+- **WASM remesh performance/quality** at higher resolution — the *library* question is now
+  resolved (`three-mesh-bvh` SDF + `manifold-3d` `LevelSet`, §6.4), so this is no longer an
+  open-ended "does a tool exist" bet. What remains is whether that stack hits acceptable quality
+  on **thin geometry** (weapon blades) and acceptable speed at figurine-useful voxel resolution —
+  bounded by `manifold-3d`'s serial WASM build. Fallback is the **local companion / documented
+  Blender recipe** (serverless is rejected). Phase 0's weapon spike is the direct test of both.
 - **Weapon attachment orientation** — fiddly per weapon type; expect manual tuning.
 - **Classic armor is texture-only** — "armor" barely shows in single-color geometry; set
   expectations up front. Since Luclin models are out of scope, this is a permanent, accepted
