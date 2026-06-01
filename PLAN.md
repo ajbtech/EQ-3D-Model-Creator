@@ -7,6 +7,31 @@ and download a watertight STL for printing.
 
 ---
 
+## Resolved design decisions (v2 — after design review)
+
+These supersede the original text where they conflict; the body below has been updated to match.
+
+1. **Print-prep is a client-side voxel/SDF remesh, not a boolean union.** EQ game meshes are
+   open sheets (hollow bodies, zero-thickness blades/capes), so `manifold-3d`'s union can't be
+   the workhorse — it only guarantees watertightness when each sub-part is *already* a closed
+   solid. A volumetric remesh (Section 6.3) is the **primary** path; `manifold-3d` is demoted to
+   a helper for fusing parts that are already solid.
+2. **Strictly static — no backend, ever.** Serverless Blender (old Section 6.4-B) is **rejected**.
+   When WASM remesh can't close a mesh, the fallback is a **downloadable companion / documented
+   Blender recipe the user runs locally** (old 6.4-C). This preserves the "ships nothing, touches
+   nothing" legal/hosting posture that makes broad distribution safe.
+3. **Phase 0 includes one held weapon.** A naked low-poly human is the *easiest* remesh case; the
+   spike must also prove the hard case (thin blade + hand attachment) before any UI is built.
+4. **Target broad P99 adoption from the start.** Consequence: the glTF-upload step is the single
+   biggest adoption barrier, and with a server off the table, the **WASM S3D extractor** (formerly
+   a Phase 4 stretch) is pulled earlier. Until it lands, the **manual pickers** (no upload at all)
+   are the low-friction on-ramp for casual users.
+
+> Net standing risk: "broad audience + strictly client-side" front-loads our two hardest chunks
+> (WASM voxel remesh and WASM S3D extraction). Both are now near-term bets — see Section 11.
+
+---
+
 ## 0. Two decisions that shape the whole project
 
 ### 0.1 Ship no art — ship a metadata database + an engine
@@ -26,14 +51,16 @@ a *metadata* database.** This mirrors the Travel Map (reads the user's own logs,
 nothing copyrighted). The "database" we maintain is factual lookup data — like ZEMs and
 hell levels — not art.
 
-### 0.2 Static, client-side site — with one caveat
-- Assembly, posing, live 3D preview, and STL export run fully **client-side** (three.js).
-- The **one** step that strains pure-static is turning a hollow game mesh into a watertight
-  printable solid. That is most reliable in headless Blender. Plan: do it in-browser via
-  WASM where we can, and keep a documented Blender fallback (see Section 6).
+### 0.2 Strictly static, client-side site — no backend, ever
+- Assembly, posing, live 3D preview, STL export, **and print-prep** all run **client-side**
+  (three.js + WASM).
+- The hardest step is turning a hollow game mesh into a watertight printable solid. We do this
+  with an **in-browser WASM voxel/SDF remesh** (Section 6). When that can't close a particular
+  mesh, the fallback is a **downloadable companion tool / documented Blender recipe the user
+  runs locally** — never a server.
 
-Net result: hostable on GitHub Pages, no backend, no hosting cost, no IP exposure — same
-shape as the XP Calculator.
+Net result: hostable on GitHub Pages, **no backend** (a serverless step is explicitly rejected),
+no hosting cost, no IP exposure — same shape as the XP Calculator.
 
 ---
 
@@ -183,21 +210,23 @@ Rather than hand-closing every hole per model, convert the assembled+posed parts
 Trade-offs: detail softens at low voxel resolution (fine for figurine scale), and parts that
 merely touch get fused (usually desirable here).
 
-### 6.4 Where to run it — three options
-- **A. Pure client-side (WASM).** `manifold-3d` (WASM) does boolean **union** and guarantees
-  manifold output — ideal *if* each sub-part is itself a closed solid. For repairing
-  arbitrary open/non-manifold meshes, you need a true voxel/SDF remesh (heavier WASM, e.g. an
-  OpenVDB port or a marching-cubes-over-SDF you control). Keeps the site fully static; riskiest
-  on performance/quality at higher resolutions.
-- **B. Tiny serverless step.** One function runs headless Blender's **Voxel Remesh** +
-  **3D-Print-Toolbox** (the reliable workhorse) and returns the STL. Breaks "pure static" but
-  only for this one call; modest hosting.
-- **C. Downloadable companion.** Site emits an assembled glTF; a small local tool (or a
-  documented Blender recipe) does the remesh. Most robust, least seamless.
+### 6.4 Where to run it — decided: client-side WASM, with a local companion fallback
+- **A. Pure client-side WASM voxel/SDF remesh — PRIMARY.** A true voxel/SDF remesh (e.g. an
+  OpenVDB port or a marching-cubes-over-SDF we control) repairs arbitrary open/non-manifold
+  meshes and guarantees a watertight result. This is the main path. `manifold-3d` is kept only
+  as a **helper** to boolean-**union** sub-parts that are *already* closed solids — it is not
+  the repair workhorse, because game meshes are open sheets. Keeps the site fully static;
+  the main risk is performance/quality at higher voxel resolution (Section 11).
+- **C. Downloadable companion — FALLBACK.** When the WASM remesh can't close a mesh, the site
+  emits an assembled glTF and a small local tool (or a documented Blender Voxel-Remesh +
+  3D-Print-Toolbox recipe) does the remesh. Most robust, least seamless — but still no server.
+- **B. Serverless Blender — REJECTED.** A function running headless Blender would be the most
+  reliable workhorse, but it is a backend and breaks the "strictly static, ships/touches
+  nothing" posture (Section 0.2, Section 9). Not pursued.
 
-**Recommendation:** start with **A** for solid sub-parts via `manifold-3d` union; if a result
-isn't watertight, fall back to a **documented Blender voxel-remesh recipe** (B/C). Move toward
-fully-automatic as confidence grows.
+**Recommendation:** ship **A** (WASM voxel remesh) as the default; offer **C** as the documented
+escape hatch for meshes it can't close. Improve WASM resolution/quality over time so **C** is
+needed less and less.
 
 ### 6.5 After remesh
 - Optional **smoothing** + **decimation** (lower triangle count for slicers).
@@ -236,10 +265,13 @@ Versioned JSON, each with an explicit "sources & assumptions" note like the XP C
 ## 8. Tech stack
 - **Static site** on GitHub Pages; vanilla JS or a light framework (match the XP Calc).
 - **three.js** — glTF load, assembly, posing, preview, `STLExporter`.
-- **manifold-3d (WASM)** — boolean union / manifold guarantee.
-- **LanternExtractor** — user-run, off-site, to produce glTF (MVP).
-- Optional later: one serverless function (Blender headless) for bulletproof remesh; WASM
-  S3D parser for drag-and-drop.
+- **WASM voxel/SDF remesh** (OpenVDB port or custom marching-cubes-over-SDF) — **primary**
+  print-prep: watertight guarantee on arbitrary open meshes.
+- **manifold-3d (WASM)** — helper only: boolean union of already-solid sub-parts.
+- **LanternExtractor** — user-run, off-site, to produce glTF (MVP onramp); replaced by a WASM
+  S3D parser for drag-and-drop (Phase 3.5).
+- **Downloadable companion / documented Blender recipe** — local fallback when WASM remesh can't
+  close a mesh. No serverless component (explicitly rejected, Section 6.4-B).
 
 ---
 
@@ -254,15 +286,18 @@ enable selling prints.
 ## 10. Phased roadmap
 
 ### Phase 0 — Spike (de-risk before any UI)  ← START HERE
-Prove the whole pipeline on **one** character by hand:
-1. Extract one Human Male with LanternExtractor -> glTF.
+Prove the whole pipeline on **one** character **holding one weapon** by hand:
+1. Extract one Human Male **+ one weapon** (e.g. a 1H sword) with LanternExtractor -> glTF.
 2. Load in three.js; confirm skeleton + animations are present.
-3. Pose at one chosen frame; bake the skinned mesh.
-4. Remesh to watertight via `manifold-3d` (and/or Blender voxel remesh).
+3. Pose at one chosen frame; bake the skinned mesh. **Attach the weapon to the hand bone** so the
+   spike includes the hard case: thin blade geometry + attachment, not just a smooth body.
+4. Remesh to watertight via the **WASM voxel/SDF remesh** (validate it can close the thin blade);
+   keep a Blender voxel-remesh run as a cross-check baseline.
 5. Export STL; open in a slicer (and ideally print one) to confirm it's actually printable.
 
-If Phase 0 works end-to-end, the rest is UI + data. If it doesn't, you've learned the real
-constraints before building anything.
+If Phase 0 works end-to-end **with the weapon**, the rest is UI + data. If the WASM remesh can't
+close the thin blade at a reasonable resolution, you've learned the real constraint (and whether
+the companion fallback is mandatory) before building anything.
 
 ### Phase 1 — MVP
 Manual race/gender select, upload pre-extracted glTF, 5 poses, basic body (no equipment yet),
@@ -275,17 +310,26 @@ scale normalization + base; build out tables 2 & 4.
 ### Phase 3 — Inventory import
 `/outputfile inventory` parsing + the item->appearance DB; auto-build from a real character.
 
+### Phase 3.5 — In-browser S3D extraction (pulled forward for broad adoption)
+WASM port of LanternExtractor logic so the user can drag-and-drop their `.s3d` archives instead
+of running an external tool first. This is the single biggest adoption lever (the glTF-upload
+step is the main barrier) and, with no server allowed, the only way to make onboarding seamless.
+Until it lands, the **manual pickers** remain the zero-upload on-ramp for casual users.
+
 ### Phase 4 — Stretch
-In-browser S3D extraction (WASM port of LanternExtractor logic) for pure drag-and-drop;
-multi-part/multi-color export and paint-guide output; Luclin-model support.
+Multi-part/multi-color export and paint-guide output; Luclin-model support; richer pose library.
 
 ---
 
 ## 11. Biggest risks / honest unknowns
-- **In-browser S3D parsing** (only if you pursue full client-side extraction) — mitigated by
-  the LanternExtractor-first MVP.
-- **WASM remesh performance/quality** at higher resolution — fallback to Blender (serverless
-  or companion).
+- **In-browser S3D parsing** — now a near-term commitment (Phase 3.5), not a stretch, because
+  broad adoption + no-server means drag-and-drop is the only seamless onramp. Mitigated by the
+  LanternExtractor-first MVP and the manual pickers as a zero-upload fallback. This is one of the
+  two big front-loaded WASM bets.
+- **WASM remesh performance/quality** at higher resolution — the other big front-loaded WASM bet,
+  and the load-bearing assumption of the whole no-server plan. Fallback is the **local companion /
+  documented Blender recipe** (serverless is rejected). Phase 0's weapon spike is the early test
+  of whether WASM resolution is good enough for thin geometry.
 - **Weapon attachment orientation** — fiddly per weapon type; expect manual tuning.
 - **Classic armor is texture-only** — "armor" barely shows in single-color geometry; set
   expectations up front (or offer Luclin for more detail).
