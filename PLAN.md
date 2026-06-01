@@ -102,15 +102,14 @@ EQ stores art in `.s3d` archives. Each contains `.wld` files (models, skeletons,
 animations) plus textures. Player race/gender models each come from their own source file
 (e.g. `globalhuf_chr.s3d`), with defined texture/head/face/hair/beard variation ranges.
 
-### 2.2 Classic vs Luclin models — pick classic by default
+### 2.2 Classic models only
 - **Classic ("old") models**: very low-poly, blocky — the look most P99 players identify
   with. Easier to clean up. Downside: armor is almost entirely *texture*, not geometry, so a
   single-color print is a smooth body with detail only in the (lost) texture.
-- **Luclin ("new") models**: higher-poly, more separate equipment geometry, more print
-  detail — but not "the P99 look" to most players.
 
-Default to classic; expose a toggle for Luclin later. This choice affects how much geometry
-equipment contributes (Section 4).
+We support classic models **only** — they are "the P99 look" and the lower poly count remeshes
+more cleanly. Luclin ("new") models are explicitly out of scope. This means equipment contributes
+relatively little geometry (Section 4), which is a known, accepted tradeoff (Section 11).
 
 ### 2.3 Getting meshes into the browser — two routes
 - **MVP route (do this first):** the user runs **LanternExtractor** (open-source, built for
@@ -317,7 +316,7 @@ step is the main barrier) and, with no server allowed, the only way to make onbo
 Until it lands, the **manual pickers** remain the zero-upload on-ramp for casual users.
 
 ### Phase 4 — Stretch
-Multi-part/multi-color export and paint-guide output; Luclin-model support; richer pose library.
+Multi-part/multi-color export and paint-guide output; richer pose library.
 
 ---
 
@@ -332,7 +331,8 @@ Multi-part/multi-color export and paint-guide output; Luclin-model support; rich
   of whether WASM resolution is good enough for thin geometry.
 - **Weapon attachment orientation** — fiddly per weapon type; expect manual tuning.
 - **Classic armor is texture-only** — "armor" barely shows in single-color geometry; set
-  expectations up front (or offer Luclin for more detail).
+  expectations up front. Since Luclin models are out of scope, this is a permanent, accepted
+  tradeoff rather than something a future model toggle will fix.
 - **Pose frame selection** is manual curation, not automatic.
 - **Action-pose printability** (overhangs, balance) — always add a base; warn on casting/attack.
 
