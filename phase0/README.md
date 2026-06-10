@@ -94,4 +94,18 @@ phase0/
   axis / 128.
 - **`dilate`** — grows the solid outward before extraction; closes thin gaps and enforces a
   minimum printable wall on blades/capes (PLAN.md §6.5). The blade only survives reliably with a
-  little dilation — exactly the thin-feature finding Phase 0 was meant to surface.
+  little dilation — exactly the thin-feature finding Phase 0 was meant to surface. When `> 0` it
+  runs as a morphological **close** (dilate → erode) so parts fuse without bulking the figure.
+
+## Performance
+
+The print-prep is two SDF→`LevelSet` passes. The cost is the per-sample sign test:
+
+- **Pass 1 (raw mesh)** uses a 5-direction winding vote because raw EQ art is open / multi-part —
+  ~12s for the real Human Male at the default resolution.
+- **Pass 2 (erosion)** runs on the already-watertight dilated solid, where a **single** ray is
+  exact, so it uses `directions: 1` (5× fewer raycasts) with no quality change.
+
+Bigger speedups (GPU SDF via three-mesh-bvh's GPU path, or a true narrow-band that only samples
+near the surface) are Phase 1 architecture, not in scope here. Note: `validate-glb.js` also calls
+`manifold.decompose()` to report component count — that is diagnostic overhead, not pipeline cost.
