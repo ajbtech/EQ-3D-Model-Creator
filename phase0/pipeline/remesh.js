@@ -84,7 +84,19 @@ export async function remeshToWatertight(geometries, { voxelSize, dilate, margin
 
   // levelSet keeps the region where f > level. f is positive inside, so level=0
   // extracts the original surface; level=-dilate grows the solid outward by `dilate`.
-  const manifold = Manifold.levelSet((p) => sdf(p), bounds, voxelSize, -dilate);
+  let manifold = Manifold.levelSet((p) => sdf(p), bounds, voxelSize, -dilate);
+
+  // Morphological CLOSE: if we dilated to bridge the gaps between the model's
+  // separate parts, erode by the same amount so the body returns to its true
+  // thickness. Bridges narrower than 2*dilate survive (thin, natural-looking
+  // joins) while the rest of the surface is no longer bulked out. The second SDF
+  // is built from the dilated solid -- already watertight -- so its sign is exact.
+  if (dilate > 0 && !manifold.isEmpty()) {
+    const dilatedGeo = manifoldToGeometry(manifold);
+    const sdf2 = makeSignedDistance(dilatedGeo);
+    const eroded = Manifold.levelSet((p) => sdf2(p), bounds, voxelSize, dilate);
+    if (!eroded.isEmpty() && eroded.volume() > 0) manifold = eroded;
+  }
 
   const geometry = manifoldToGeometry(manifold);
   const stats = {
