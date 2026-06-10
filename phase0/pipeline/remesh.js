@@ -93,7 +93,9 @@ export async function remeshToWatertight(geometries, { voxelSize, dilate, margin
   // is built from the dilated solid -- already watertight -- so its sign is exact.
   if (dilate > 0 && !manifold.isEmpty()) {
     const dilatedGeo = manifoldToGeometry(manifold);
-    const sdf2 = makeSignedDistance(dilatedGeo);
+    // The dilated solid is watertight, so a single-ray winding is exact -- no need
+    // for the 5-direction vote, cutting this pass's raycasts 5x without quality loss.
+    const sdf2 = makeSignedDistance(dilatedGeo, { directions: 1 });
     const eroded = Manifold.levelSet((p) => sdf2(p), bounds, voxelSize, dilate);
     if (!eroded.isEmpty() && eroded.volume() > 0) manifold = eroded;
   }
