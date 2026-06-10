@@ -12,10 +12,13 @@ we ship only the engine + metadata. See [`PLAN.md`](./PLAN.md) for the full desi
 ## Commands
 
 ```
-npm install      # install deps (three, three-mesh-bvh, manifold-3d)
+npm install      # install deps (three, three-mesh-bvh, manifold-3d; vite for the app)
+npm run dev      # Vite dev server for the app/ MVP (guided pickers + poses + STL)
+npm run build    # production bundle -> dist/ (what GitHub Pages serves)
+npm run preview  # serve the built dist/ locally
 npm test         # run the unit + integration test suite (node --test)
 npm run spike    # headless end-to-end pipeline spike on a synthetic rig (asserts; exits non-zero on failure)
-npm run serve    # serve the browser viewer at http://localhost:5173
+npm run serve    # serve the legacy Phase 0 viewer at http://localhost:5173
 ```
 
 ## Development workflow — use TDD
@@ -43,7 +46,10 @@ must ship with tests. Keep `npm test` green; CI (`.github/workflows/ci.yml`) run
 
 ## Layout
 
-- `phase0/pipeline/` — the engine: `pose` → `sdf` → `remesh` → `exportStl`, with `merge` + `index`.
+- `phase0/pipeline/` — the engine (shared by app, tests, spike): `pose` → `sdf` → `remesh` →
+  `exportStl`, with `merge`, `scale` (figurine height), `poses` (curated-pose resolution), `index`.
 - `phase0/fixtures/` — synthetic test rig (a jig, not EQ art).
-- `phase0/web/` — browser viewer reusing the same pipeline modules.
+- `phase0/web/` — legacy Phase 0 viewer (kept for reference).
+- `app/` — the Phase 1 MVP web app (Vite root): `src/` (UI) + `data/` (poses/races metadata JSON).
 - `test/` — `node --test` unit + integration tests.
+- `vite.config.js` — `root: app/`, `base: /EQ-3D-Model-Creator/` for GitHub Pages.

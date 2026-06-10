@@ -5,6 +5,8 @@ export { bakePose } from './pose.js';
 export { remeshToWatertight, loadManifold } from './remesh.js';
 export { makeSignedDistance } from './sdf.js';
 export { geometryToStl, stlToBuffer } from './exportStl.js';
+export { scaleGeometryToHeight } from './scale.js';
+export { resolvePose } from './poses.js';
 
 // End-to-end Phase 0 spine: pose -> bake -> watertight remesh.
 //
