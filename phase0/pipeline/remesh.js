@@ -51,8 +51,11 @@ function manifoldToGeometry(manifold) {
 //   dilate    : grow the solid outward by this distance before extraction. Closes
 //               thin gaps and enforces a minimum wall thickness on blades/capes
 //               (PLAN.md section 6.5). Surface is extracted at level = -dilate.
+//               If left undefined it defaults to ~1 voxel, which fuses the many
+//               separate sub-meshes of a real EQ model into one solid; pass 0
+//               explicitly to disable.
 //   margin    : padding added around the bounding box so the dilated surface fits.
-export async function remeshToWatertight(geometries, { voxelSize, dilate = 0, margin } = {}) {
+export async function remeshToWatertight(geometries, { voxelSize, dilate, margin } = {}) {
   const wasm = await loadManifold();
   const { Manifold } = wasm;
 
@@ -65,6 +68,12 @@ export async function remeshToWatertight(geometries, { voxelSize, dilate = 0, ma
   if (!voxelSize) {
     voxelSize = Math.max(size.x, size.y, size.z) / 128;
   }
+  // Default to ~1.5 voxels of dilation so a real model's many separate body parts
+  // fuse into a single connected watertight solid (the smallest that reliably gives
+  // one component on extracted EQ models). Any remaining genus is anatomical -- the
+  // arm-to-torso and leg gaps -- which we keep so the figure isn't a blob. Pass an
+  // explicit 0 to disable, or a larger value to merge limbs further.
+  if (dilate === undefined) dilate = voxelSize * 1.5;
   const pad = margin ?? dilate + voxelSize * 3;
   const bounds = {
     min: [bb.min.x - pad, bb.min.y - pad, bb.min.z - pad],

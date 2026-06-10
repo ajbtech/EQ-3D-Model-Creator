@@ -33,6 +33,26 @@ npm run spike
 > this environment. The pipeline is **loader-agnostic** — it consumes a `{ root, animations }`
 > shaped like a loaded glTF — so the exact same code path runs on a real LanternExtractor glTF.
 
+## Validated on real extracted art
+
+`npm run spike` proves the spine synthetically; `validate-glb.js` proves it on a **real
+LanternExtractor export** (the `.glb` stays local -- it is the user's own EQ art, never committed):
+
+```
+node phase0/validate-glb.js <path-to.glb> [clipName] [time]
+```
+
+Result on a real Human Male (`HUM`) export: **13 skinned meshes, 25 bones, 70 named animation
+clips** (Stand, Wave, Salute, Bow, Combat 1H Slash, Cast Push Forward, ...) loaded and posed,
+then remeshed to a **single-component, watertight** STL. Two findings carried forward:
+
+- **Inside/outside must use a winding test, not parity.** A real model is ~13 interpenetrating
+  closed parts; plain crossing-parity computes their *symmetric difference* (a point inside two
+  overlapping parts reads "outside"), carving spurious tunnels. Summing signed crossings gives the
+  *union* -- the fused figure we want. (See `sdf.js`.)
+- **A small auto-dilation (~1.5 voxels) fuses the separate parts** into one connected solid. Any
+  remaining genus is anatomical (the arm-to-torso / leg gaps), which we keep on purpose.
+
 ## Browser viewer (for your real glTF)
 
 `phase0/web/` is the interactive Phase 0 viewer: upload a `.glb` extracted with
@@ -61,7 +81,9 @@ phase0/
   fixtures/
     makeSyntheticRig.js   the synthetic skinned figure + thin blade (test jig, not EQ art)
   web/             browser viewer (index.html + app.js)
-  run-spike.js     headless end-to-end spike with assertions
+  run-spike.js     headless end-to-end spike with assertions (synthetic rig)
+  validate-glb.js  end-to-end validation against a real extracted .glb
+  strip-textures.js  Node helper: drop textures from a GLB so it parses without a DOM
   serve.js         tiny static server for the viewer
 ```
 

@@ -27,12 +27,27 @@ export function makeSignedDistance(geometry) {
   const hit = {};
   const ray = new THREE.Ray();
 
+  // Inside/outside by a ray-stabbing WINDING test, voted across several directions.
+  //
+  // Plain parity (count crossings % 2) computes the symmetric difference of
+  // overlapping closed parts: a point inside two interpenetrating sub-meshes (very
+  // common in EQ models -- 13 separate body parts) crosses 4 surfaces, reads even,
+  // and is wrongly classed "outside", carving spurious tunnels. Instead we sum the
+  // signed crossings: +1 each time the ray exits a solid (face normal along the ray)
+  // and -1 each time it enters. The net is how many solids contain the point, so
+  // "inside if net >= 1" gives the UNION of all parts -- what we want for a fused,
+  // printable figure. Voting over directions tolerates open sheets and grazing hits.
   function isInside(px, py, pz) {
     let votes = 0;
     for (const dir of VOTE_DIRECTIONS) {
       ray.origin.set(px, py, pz);
       ray.direction.copy(dir);
-      if (bvh.raycast(ray, THREE.DoubleSide).length % 2 === 1) votes++;
+      const hits = bvh.raycast(ray, THREE.DoubleSide);
+      let winding = 0;
+      for (const h of hits) {
+        winding += Math.sign(h.face.normal.x * dir.x + h.face.normal.y * dir.y + h.face.normal.z * dir.z);
+      }
+      if (winding >= 1) votes++;
     }
     return votes * 2 > VOTE_DIRECTIONS.length;
   }
