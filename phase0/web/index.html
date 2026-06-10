@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EQ 3D Model Creator — Phase 0 spike</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: #15171c; color: #e6e8ec; }
+      #app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+      #panel { padding: 16px; overflow-y: auto; border-right: 1px solid #2a2e36; }
+      #viewport { position: relative; }
+      canvas { display: block; }
+      h1 { font-size: 16px; margin: 0 0 4px; }
+      .sub { color: #97a0ad; font-size: 12px; margin: 0 0 16px; }
+      fieldset { border: 1px solid #2a2e36; border-radius: 8px; margin: 0 0 14px; padding: 12px; }
+      legend { color: #97a0ad; padding: 0 6px; }
+      label { display: block; margin: 8px 0 4px; color: #c2c8d0; }
+      input[type="number"], select { width: 100%; padding: 6px; background: #1d2128; color: #e6e8ec; border: 1px solid #353b45; border-radius: 6px; }
+      input[type="range"] { width: 100%; }
+      button { width: 100%; padding: 9px; margin-top: 8px; background: #3b82f6; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; }
+      button.secondary { background: #2a2e36; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      #status { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; color: #9fb3c8; background: #1a1d23; border-radius: 6px; padding: 10px; min-height: 90px; }
+      .hint { color: #7d8794; font-size: 11px; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="panel">
+        <h1>EQ 3D Model Creator</h1>
+        <p class="sub">Phase 0 spike — pose → bake → watertight remesh → STL, fully client-side.</p>
+
+        <fieldset>
+          <legend>1 · Model</legend>
+          <label for="file">Upload a <b>.glb</b> (extracted with LanternExtractor)</label>
+          <input type="file" id="file" accept=".glb,.gltf" />
+          <p class="hint">No EQ art is shipped — you supply your own from your client. .glb is recommended (self-contained).</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>2 · Pose</legend>
+          <label for="clip">Animation clip</label>
+          <select id="clip" disabled></select>
+          <label for="time">Frame / time: <span id="timeLabel">0.00</span>s</label>
+          <input type="range" id="time" min="0" max="1" step="0.01" value="0" disabled />
+          <button id="bake" class="secondary" disabled>Preview posed mesh</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>3 · Print-prep (voxel remesh)</legend>
+          <label for="voxel">Voxel size (smaller = more detail, slower)</label>
+          <input type="number" id="voxel" value="0" step="0.01" min="0" />
+          <p class="hint">0 = auto (~1/128 of the longest axis).</p>
+          <label for="dilate">Dilate / min-wall (thickens thin blades, capes)</label>
+          <input type="number" id="dilate" value="0" step="0.01" min="0" />
+          <button id="remesh" disabled>Remesh to watertight</button>
+          <button id="download" class="secondary" disabled>Download STL</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Status</legend>
+          <div id="status">Load a .glb to begin.</div>
+        </fieldset>
+      </div>
+      <div id="viewport"></div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.169.0",
+          "three/": "https://esm.sh/three@0.169.0/",
+          "three-mesh-bvh": "https://esm.sh/three-mesh-bvh@0.8.0?external=three",
+          "manifold-3d": "https://esm.sh/manifold-3d@3.0.0"
+        }
+      }
+    </script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "eq-3d-model-creator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 spike: prove the EQ character print-prep pipeline (pose -> bake -> SDF remesh -> watertight STL).",
+  "scripts": {
+    "spike": "node phase0/run-spike.js",
+    "serve": "node phase0/serve.js"
+  },
+  "dependencies": {
+    "manifold-3d": "^3.0.0",
+    "three": "^0.169.0",
+    "three-mesh-bvh": "^0.8.0"
+  }
+}
