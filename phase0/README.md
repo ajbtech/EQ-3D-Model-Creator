@@ -84,6 +84,7 @@ phase0/
   run-spike.js     headless end-to-end spike with assertions (synthetic rig)
   validate-glb.js  end-to-end validation against a real extracted .glb
   strip-textures.js  Node helper: drop textures from a GLB so it parses without a DOM
+  render-stl.js    dependency-free software renderer: STL -> PNG (multi-angle preview)
   serve.js         tiny static server for the viewer
 ```
 
