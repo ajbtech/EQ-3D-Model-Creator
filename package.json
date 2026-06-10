@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Phase 0 spike: prove the EQ character print-prep pipeline (pose -> bake -> SDF remesh -> watertight STL).",
   "scripts": {
+    "test": "node --test",
     "spike": "node phase0/run-spike.js",
     "serve": "node phase0/serve.js"
   },
