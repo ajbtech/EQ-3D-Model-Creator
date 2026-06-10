@@ -1,5 +1,14 @@
 # Phase 0 — Pipeline spike
 
+> **Status: COMPLETE.** The pose → bake → watertight remesh → STL spine is proven, headless and
+> on real extracted art, and the browser viewer was smoke-tested against a real `.glb`.
+>
+> **Open risk (accepted): no physical print has been done.** Watertightness is verified
+> *automatically* — manifold + closed (every edge shared by exactly 2 triangles), genus 0, single
+> component — but that is not the same as a confirmed real-world print. Slicer behaviour, supports,
+> minimum wall thickness at actual figurine scale, and action-pose stability remain unverified
+> until someone slices and prints an STL. Carry this into Phase 1 (PLAN.md §11).
+
 Goal (from [`PLAN.md`](../PLAN.md) Phase 0): prove the whole print-prep **spine** on one
 character holding one weapon, before building any UI —
 

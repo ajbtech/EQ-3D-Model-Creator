@@ -354,6 +354,11 @@ Multi-part/multi-color export and paint-guide output; richer pose library.
   tradeoff rather than something a future model toggle will fix.
 - **Pose frame selection** is manual curation, not automatic.
 - **Action-pose printability** (overhangs, balance) — always add a base; warn on casting/attack.
+- **Real-world printability is unverified (open since Phase 0).** Phase 0 confirmed watertight +
+  manifold + genus-0 *automatically*, and the browser viewer was smoke-tested on a real `.glb`,
+  but **no STL has been physically sliced or printed**. Slicer behaviour, minimum wall thickness at
+  figurine scale, supports, and stand-up stability are still unconfirmed. Get a real print done as
+  early in Phase 1 as possible to close this.
 
 ---
 
