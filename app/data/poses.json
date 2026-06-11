@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "sources": "Curated build metadata (PLAN.md sections 5, 7). Clip names are the human-readable names LanternExtractor emits for classic EQ animation clips; candidates are listed in priority order and the first one present in the uploaded model is used. Frame fractions are provisional and tuned visually for how each reads as a frozen figurine.",
+  "poses": [
+    {
+      "id": "standing",
+      "label": "Standing",
+      "clipCandidates": ["Stand", "Idle", "Stand (Arms at Sides)"],
+      "frame": 0.5,
+      "notes": "Safe default; compact and balanced, the most printable pose."
+    },
+    {
+      "id": "waving",
+      "label": "Waving",
+      "clipCandidates": ["Wave"],
+      "frame": 0.5,
+      "notes": "One arm raised; introduces an overhang and a small balance shift."
+    },
+    {
+      "id": "saluting",
+      "label": "Saluting",
+      "clipCandidates": ["Salute"],
+      "frame": 0.6,
+      "notes": "Arm to head; watch the hand does not fuse to the face on remesh."
+    },
+    {
+      "id": "bowing",
+      "label": "Bowing",
+      "clipCandidates": ["Bow"],
+      "frame": 0.5,
+      "notes": "Social greeting; a stable, self-supporting pose."
+    },
+    {
+      "id": "attacking",
+      "label": "Attacking",
+      "clipCandidates": ["Combat 1H Slash", "Combat 1H Slash Left", "Combat 2H Slash", "Combat Piercing"],
+      "frame": 0.5,
+      "notes": "Weapon extended; long overhang and a thin blade — usually wants a base."
+    },
+    {
+      "id": "casting",
+      "label": "Casting",
+      "clipCandidates": ["Cast Push Forward", "Cast Pull Back", "Raise and Loop Arms"],
+      "frame": 0.5,
+      "notes": "Arms out; dramatic but the hardest to print (overhangs, balance)."
+    }
+  ]
+}

@@ -18,3 +18,5 @@ jobs:
       - run: npm test
       # Smoke-run the end-to-end synthetic spike too (it asserts + exits non-zero on failure).
       - run: npm run spike
+      # Prove the production bundle still builds (catches import/resolution breakage).
+      - run: npm run build

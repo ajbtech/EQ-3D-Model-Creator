@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EQ 3D Model Creator</title>
+  </head>
+  <body>
+    <div id="app">
+      <aside id="panel">
+        <header>
+          <h1>EQ 3D Model Creator</h1>
+          <p class="sub">Turn your EverQuest / P99 character into a posed, print-ready 3D model — entirely in your browser. <strong>No game art leaves your machine.</strong></p>
+        </header>
+
+        <section class="step">
+          <h2><span class="num">1</span> Upload your model</h2>
+          <label class="filebtn">
+            <input type="file" id="file" accept=".glb,.gltf" />
+            <span>Choose a .glb…</span>
+          </label>
+          <p class="hint">Export it yourself with <a href="https://github.com/vermadas/LanternExtractor" target="_blank" rel="noopener">LanternExtractor</a> (set <code>ExportGltfInGlbFormat=true</code> and <code>ExportAllAnimationFrames=true</code>). Whatever gear is in the model gets posed and printed too.</p>
+        </section>
+
+        <section class="step">
+          <h2><span class="num">2</span> Character</h2>
+          <div class="row">
+            <label>Race
+              <select id="race" disabled></select>
+            </label>
+            <label>Gender
+              <select id="gender" disabled></select>
+            </label>
+          </div>
+          <p class="hint" id="scaleHint">Sets the printed figurine height.</p>
+        </section>
+
+        <section class="step">
+          <h2><span class="num">3</span> Pose</h2>
+          <div id="poses" class="poses">
+            <p class="hint">Upload a model to choose a pose.</p>
+          </div>
+        </section>
+
+        <section class="step">
+          <h2><span class="num">4</span> Make it printable</h2>
+          <button id="generate" class="primary" disabled>Generate printable model</button>
+          <button id="download" class="secondary" disabled>Download STL</button>
+          <div id="stats" class="stats"></div>
+
+          <details class="advanced">
+            <summary>Advanced</summary>
+            <label>Voxel size (0 = auto)
+              <input type="number" id="voxel" value="0" step="0.01" min="0" />
+            </label>
+            <label>Dilate (blank = auto, 0 = off)
+              <input type="number" id="dilate" placeholder="auto" step="0.01" min="0" />
+            </label>
+          </details>
+        </section>
+
+        <details class="howto">
+          <summary>How to print this STL</summary>
+          <ul>
+            <li><strong>Scale:</strong> already scaled to a tabletop height for the chosen race — tweak in your slicer if you like.</li>
+            <li><strong>Supports:</strong> generate them in your slicer (Cura / PrusaSlicer / Lychee). Action poses (attacking, casting) need them.</li>
+            <li><strong>Material:</strong> resin for fine figurine detail; FDM for larger, cheaper prints.</li>
+            <li><strong>Heads-up:</strong> the pipeline guarantees a watertight, manifold solid, but no design has been physically test-printed yet — sanity-check before a long print.</li>
+          </ul>
+        </details>
+
+        <div id="status" class="status">Upload a .glb to begin.</div>
+      </aside>
+      <main id="viewport"></main>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

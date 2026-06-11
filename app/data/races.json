@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "sources": "PLAN.md sections 6.5, 7. Model codes are the classic EQ race/gender codes (e.g. HUM = Human Male). targetHeightMm are PROVISIONAL tabletop figurine heights, anchored to a 32mm human and scaled by approximate in-game/lore race height ratios; refine against real prints. Heights are kept equal across genders for now.",
+  "races": [
+    { "code": "HUM", "race": "Human", "gender": "Male", "label": "Human Male", "targetHeightMm": 32 },
+    { "code": "HUF", "race": "Human", "gender": "Female", "label": "Human Female", "targetHeightMm": 31 },
+    { "code": "BAM", "race": "Barbarian", "gender": "Male", "label": "Barbarian Male", "targetHeightMm": 38 },
+    { "code": "BAF", "race": "Barbarian", "gender": "Female", "label": "Barbarian Female", "targetHeightMm": 37 },
+    { "code": "ERM", "race": "Erudite", "gender": "Male", "label": "Erudite Male", "targetHeightMm": 33 },
+    { "code": "ERF", "race": "Erudite", "gender": "Female", "label": "Erudite Female", "targetHeightMm": 32 },
+    { "code": "ELM", "race": "Wood Elf", "gender": "Male", "label": "Wood Elf Male", "targetHeightMm": 27 },
+    { "code": "ELF", "race": "Wood Elf", "gender": "Female", "label": "Wood Elf Female", "targetHeightMm": 26 },
+    { "code": "HIM", "race": "High Elf", "gender": "Male", "label": "High Elf Male", "targetHeightMm": 33 },
+    { "code": "HIF", "race": "High Elf", "gender": "Female", "label": "High Elf Female", "targetHeightMm": 32 },
+    { "code": "DAM", "race": "Dark Elf", "gender": "Male", "label": "Dark Elf Male", "targetHeightMm": 26 },
+    { "code": "DAF", "race": "Dark Elf", "gender": "Female", "label": "Dark Elf Female", "targetHeightMm": 25 },
+    { "code": "HAM", "race": "Half Elf", "gender": "Male", "label": "Half Elf Male", "targetHeightMm": 29 },
+    { "code": "HAF", "race": "Half Elf", "gender": "Female", "label": "Half Elf Female", "targetHeightMm": 28 },
+    { "code": "DWM", "race": "Dwarf", "gender": "Male", "label": "Dwarf Male", "targetHeightMm": 22 },
+    { "code": "DWF", "race": "Dwarf", "gender": "Female", "label": "Dwarf Female", "targetHeightMm": 21 },
+    { "code": "HOM", "race": "Halfling", "gender": "Male", "label": "Halfling Male", "targetHeightMm": 19 },
+    { "code": "HOF", "race": "Halfling", "gender": "Female", "label": "Halfling Female", "targetHeightMm": 18 },
+    { "code": "GNM", "race": "Gnome", "gender": "Male", "label": "Gnome Male", "targetHeightMm": 16 },
+    { "code": "GNF", "race": "Gnome", "gender": "Female", "label": "Gnome Female", "targetHeightMm": 16 },
+    { "code": "TRM", "race": "Troll", "gender": "Male", "label": "Troll Male", "targetHeightMm": 48 },
+    { "code": "TRF", "race": "Troll", "gender": "Female", "label": "Troll Female", "targetHeightMm": 46 },
+    { "code": "OGM", "race": "Ogre", "gender": "Male", "label": "Ogre Male", "targetHeightMm": 52 },
+    { "code": "OGF", "race": "Ogre", "gender": "Female", "label": "Ogre Female", "targetHeightMm": 50 },
+    { "code": "IKM", "race": "Iksar", "gender": "Male", "label": "Iksar Male", "targetHeightMm": 33 },
+    { "code": "IKF", "race": "Iksar", "gender": "Female", "label": "Iksar Female", "targetHeightMm": 32 }
+  ]
+}
