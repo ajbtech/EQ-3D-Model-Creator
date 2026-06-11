@@ -8,10 +8,15 @@ import {
   scaleGeometryToHeight,
   resolvePose,
   withBase,
+  resolveBone,
+  attachEquipment,
+  detachEquipment,
+  listBones,
 } from '../../phase0/pipeline/index.js';
 import { createViewer } from './scene.js';
 import racesData from '../data/races.json';
 import posesData from '../data/poses.json';
+import attachmentsData from '../data/attachments.json';
 
 const $ = (id) => document.getElementById(id);
 const log = (msg) => { $('status').textContent = msg; };
@@ -22,6 +27,8 @@ const state = {
   loaded: null, // { root, animations }
   posed: null, // baked BufferGeometry for the chosen pose
   pose: null, // the active pose definition
+  resolved: null, // resolved { clipName, time } for the active pose
+  equipment: null, // loaded equipment gltf.scene (attached to a bone)
   scaled: null, // remeshed + scaled geometry
   stl: null, // DataView for download
 };
@@ -61,12 +68,15 @@ $('file').addEventListener('change', async (e) => {
     state.loaded = { root: gltf.scene, animations: gltf.animations || [] };
     state.posed = null;
     state.pose = null;
+    state.resolved = null;
+    state.equipment = null;
     $('generate').disabled = true;
     $('download').disabled = true;
     $('stats').textContent = '';
 
     viewer.show(state.loaded.root);
     buildPoseButtons();
+    setupEquipment();
 
     let meshes = 0;
     state.loaded.root.traverse((o) => { if (o.isMesh) meshes++; });
@@ -100,22 +110,113 @@ function buildPoseButtons() {
 function selectPose(pose, resolved, btn) {
   [...$('poses').children].forEach((b) => b.classList.remove('active'));
   btn.classList.add('active');
+  state.pose = pose;
+  state.resolved = resolved;
+  rebake();
+}
+
+// Bake the active pose (with any attached equipment baked in) and preview it.
+function rebake() {
+  if (!state.loaded || !state.resolved) return;
   try {
     const { geometry } = bakePose(state.loaded.root, state.loaded.animations, {
-      clipName: resolved.clipName,
-      time: resolved.time,
+      clipName: state.resolved.clipName,
+      time: state.resolved.time,
     });
     state.posed = geometry;
-    state.pose = pose;
     viewer.showGeometry(geometry, 0x7fa7d4);
     $('generate').disabled = false;
     $('download').disabled = true;
-    log(`Posed as “${pose.label}” (clip: ${resolved.clipName}).\nReady to generate the printable model.`);
+    log(`Posed as “${state.pose.label}” (clip: ${state.resolved.clipName}).\nReady to generate the printable model.`);
   } catch (err) {
     console.error(err);
     log(`Pose failed: ${err.message}`);
   }
 }
+
+// --- Equipment ----------------------------------------------------------
+const RAD = Math.PI / 180;
+const slotById = (id) => attachmentsData.slots.find((s) => s.id === id);
+
+// One-time: fill the slot dropdown.
+$('eqSlot').innerHTML = attachmentsData.slots.map((s) => `<option value="${s.id}">${s.label}</option>`).join('');
+
+function setupEquipment() {
+  $('eqFile').disabled = false;
+  $('eqFile').value = '';
+  $('eqControls').hidden = true;
+  state.equipment = null;
+  // Populate the bone picker from this model's actual skeleton.
+  const bones = listBones(state.loaded.root);
+  $('eqBone').innerHTML = bones.map((b) => `<option>${b}</option>`).join('');
+}
+
+function readOffset() {
+  return {
+    position: [Number($('eqPosX').value), Number($('eqPosY').value), Number($('eqPosZ').value)],
+    rotationEuler: [Number($('eqRotX').value) * RAD, Number($('eqRotY').value) * RAD, Number($('eqRotZ').value) * RAD],
+    scale: Number($('eqScale').value),
+  };
+}
+
+function applySlotDefaults(slotId) {
+  const slot = slotById(slotId);
+  const o = slot.defaultOffset;
+  $('eqPosX').value = o.position[0];
+  $('eqPosY').value = o.position[1];
+  $('eqPosZ').value = o.position[2];
+  $('eqRotX').value = Math.round(o.rotationEuler[0] / RAD);
+  $('eqRotY').value = Math.round(o.rotationEuler[1] / RAD);
+  $('eqRotZ').value = Math.round(o.rotationEuler[2] / RAD);
+  $('eqScale').value = o.scale ?? 1;
+  // Auto-resolve the bone for this slot against the model's skeleton.
+  const resolved = resolveBone(listBones(state.loaded.root), slot.boneCandidates);
+  if (resolved) $('eqBone').value = resolved;
+}
+
+function attachAndPreview() {
+  if (!state.equipment) return;
+  const boneName = $('eqBone').value;
+  if (!boneName) { log('Pick a bone to attach the equipment to.'); return; }
+  try {
+    attachEquipment(state.loaded.root, state.equipment, { boneName, ...readOffset() });
+    if (state.resolved) rebake();
+    else viewer.show(state.loaded.root);
+  } catch (err) {
+    console.error(err);
+    log(`Attach failed: ${err.message}`);
+  }
+}
+
+$('eqFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file || !state.loaded) return;
+  try {
+    const gltf = await new GLTFLoader().parseAsync(await file.arrayBuffer(), '');
+    state.equipment = gltf.scene;
+    $('eqControls').hidden = false;
+    applySlotDefaults($('eqSlot').value);
+    attachAndPreview();
+    log(`Attached ${file.name}. Nudge the sliders to seat it in the hand.`);
+  } catch (err) {
+    console.error(err);
+    log(`Failed to load equipment: ${err.message}`);
+  }
+});
+
+$('eqSlot').addEventListener('change', () => { applySlotDefaults($('eqSlot').value); attachAndPreview(); });
+$('eqBone').addEventListener('change', attachAndPreview);
+['eqPosX', 'eqPosY', 'eqPosZ', 'eqRotX', 'eqRotY', 'eqRotZ', 'eqScale'].forEach((id) => {
+  $(id).addEventListener('input', attachAndPreview);
+});
+$('eqRemove').addEventListener('click', () => {
+  if (!state.loaded) return;
+  detachEquipment(state.loaded.root);
+  state.equipment = null;
+  $('eqControls').hidden = true;
+  $('eqFile').value = '';
+  if (state.resolved) rebake(); else viewer.show(state.loaded.root);
+});
 
 // --- Generate (remesh + scale) -----------------------------------------
 $('generate').addEventListener('click', async () => {
