@@ -257,7 +257,8 @@ needed less and less.
 - **Support generation + slicing** happen in the user's slicer (Cura / PrusaSlicer / Lychee).
 - **Color**: single-material unless the user hand-paints or runs a multi-material printer.
   Resin is recommended for figurine detail; FDM for larger/cheaper prints.
-- Ship a short "how to print this STL" handoff page (scale check, supports, material).
+- Ship a short "how to print this STL" handoff page (scale check, supports, material). ✅ shipped
+  as a panel in the Phase 1 app.
 
 ---
 
@@ -265,18 +266,21 @@ needed less and less.
 
 Versioned JSON, each with an explicit "sources & assumptions" note like the XP Calc README:
 
-1. **race+gender -> model code + source file** (e.g. EQEmu race-inventory data).
-2. **race -> target print height / scale factor.**
-3. **pose -> animation clip + frame**, per skeleton type.
-4. **equipment slot -> attachment bone + transform** (the weapon-orientation table).
+1. **race+gender -> model code + source file** (e.g. EQEmu race-inventory data). ✅ `app/data/races.json`.
+2. **race -> target print height / scale factor.** ✅ `app/data/races.json` (`targetHeightMm`).
+3. **pose -> animation clip + frame**, per skeleton type. ✅ `app/data/poses.json` (candidate clips + frame).
+4. **equipment slot -> attachment bone + transform** (the weapon-orientation table). ⏳ Phase 2B
+   (`app/data/attachments.json`).
 5. **item ID/name -> appearance** (weapon model code, shield, robe, body texture material);
-   sources: P99 wiki / EQEmu item data.
-6. **visible-slot list** (which inventory slots change the model).
+   sources: P99 wiki / EQEmu item data. ⏳ Phase 3.
+6. **visible-slot list** (which inventory slots change the model). ⏳ Phase 3.
 
 ---
 
 ## 8. Tech stack
-- **Static site** on GitHub Pages; vanilla JS or a light framework (match the XP Calc).
+- **Static site** on GitHub Pages, **built with Vite** (bundles pinned npm deps incl. local
+  `manifold-3d` WASM, so the browser runs the versions the tests cover — no CDN at runtime). The
+  app is plain JS modules, no UI framework. ✅ live (deploy workflow publishes `dist/`).
 - **three.js** — glTF load, assembly, posing, preview, `STLExporter`.
 - **`three-mesh-bvh`** — samples a signed distance field from the assembled/posed mesh (BVH
   closest-point + inside/outside ray test; GPU-capable). First half of the **primary** print-prep.
@@ -300,28 +304,62 @@ enable selling prints.
 
 ## 10. Phased roadmap
 
-### Phase 0 — Spike (de-risk before any UI)  ← START HERE
-Prove the whole pipeline on **one** character **holding one weapon** by hand:
-1. Extract one Human Male **+ one weapon** (e.g. a 1H sword) with LanternExtractor -> glTF.
-2. Load in three.js; confirm skeleton + animations are present.
-3. Pose at one chosen frame; bake the skinned mesh. **Attach the weapon to the hand bone** so the
-   spike includes the hard case: thin blade geometry + attachment, not just a smooth body.
-4. Remesh to watertight via the **WASM voxel/SDF remesh** (validate it can close the thin blade);
-   keep a Blender voxel-remesh run as a cross-check baseline.
-5. Export STL; open in a slicer (and ideally print one) to confirm it's actually printable.
+> **Status (2026-06):** Phases 0, 0.5, and 1 are **complete and merged**; the app is deployed to
+> GitHub Pages. Phase 2 is the active plan. The one risk carried through every phase: no STL has
+> been *physically printed* yet (§11).
 
-If Phase 0 works end-to-end **with the weapon**, the rest is UI + data. If the WASM remesh can't
-close the thin blade at a reasonable resolution, you've learned the real constraint (and whether
-the companion fallback is mandatory) before building anything.
+### Phase 0 — Spike ✅ COMPLETE
+Proved the print-prep spine (pose → bake → SDF remesh → watertight STL) headless on a synthetic
+skinned rig **with a thin bone-attached weapon**, and validated it on a real Human Male export
+(13 skinned meshes, 25 bones, 70 named clips) → single-component watertight STL. Findings that
+shaped everything after: inside/outside needs a **winding** test (not crossing parity) for
+interpenetrating parts, and a **morphological close** (dilate → erode) fuses the separate body
+parts without bulking the figure. Stack: `three-mesh-bvh` SDF + `manifold-3d` `LevelSet`. Lives in
+`phase0/` (engine + headless spike + browser reference viewer).
 
-### Phase 1 — MVP
-Manual race/gender select, upload pre-extracted glTF, 5 poses, body **+ a single held weapon**
-(the weapon path is already proven in Phase 0; full per-slot equipment is deferred to Phase 2),
-voxel remesh, STL download, live preview.
+### Phase 0.5 — Tests + CI ✅ COMPLETE
+`node --test` unit + integration suite (incl. the winding-vs-parity regression guard, merge, STL
+closedness, GLB texture-strip, and a full-pipeline run), GitHub Actions CI (test + spike + build),
+and a **TDD mandate** in `CLAUDE.md`.
 
-### Phase 2 — Equipment + scale
-Per-slot equipment pickers; attach weapons/shields/robes/helms via the bone+transform table;
-scale normalization + base; build out tables 2 & 4.
+### Phase 1 — Guided MVP ✅ COMPLETE (deployed)
+The `app/` Vite web app: upload `.glb` → race/gender pickers → **curated pose menu** (resolved
+against the model's own clips) → live preview → watertight remesh → **scaled to a per-race figurine
+height (mm)** → download STL. Notable deltas from the original plan: **scale was pulled forward into
+Phase 1** (was Phase 2), and equipment in Phase 1 = "render whatever meshes are already in the
+uploaded glTF" (held gear included). Bundled with **Vite** (local `manifold-3d` WASM, no CDN at
+runtime, so the browser runs the versions the tests cover) and deployed to **GitHub Pages**.
+Metadata seeded: `app/data/poses.json`, `app/data/races.json`. Browser flow confirmed on real art.
+
+### Phase 2 — Stability base + equipment attachment ← ACTIVE
+Scale already shipped in Phase 1, so Phase 2 delivers the remaining items — a **stability base** and
+**equipment attachment** — as two independently-shippable PRs, **base first**. Reuses the engine
+as-is: `bakePose` bakes every mesh under the root (incl. bone-parented gear), and
+`remeshToWatertight` returns a `manifold`.
+
+**2A — Base / plinth (PR 1).** New `phase0/pipeline/base.js`. Because the remesh already returns a
+watertight manifold, fuse a base via an **exact manifold boolean union** (`Manifold.cylinder` +
+`.add()`) — no extra SDF pass. `withBase(manifold, { targetHeightMm, shape: 'round'|'hex',
+diameterFactor, baseHeightMm })`: scale to height in manifold space, seat the base **top** at the
+figure's min-Y, center it on the figure's **vertex centroid** in XZ (a CoM proxy so weight sits over
+the footprint — matters for waving/attacking/casting), union, return `{ manifold, geometry }`. App:
+base toggle (**on by default**) + round/hex shape + advanced size, applied in the generate step.
+Tests: base dims, seating, centering, single-watertight union.
+
+**2B — Equipment attachment (PR 2).** New `phase0/pipeline/attach.js`: `resolveBone(skeleton,
+candidates)` (with a UI bone-picker fallback for race naming variance) and
+`attachEquipment(characterRoot, equipmentRoot, { boneName, position, rotationEuler, scale })` —
+clones the equipment meshes and parents them to the bone with the offset; the existing `bakePose` →
+remesh then fuses them automatically. Metadata: `app/data/attachments.json` (slot → bone candidates
++ seeded default offset per 1H / 2H / shield class, provisional). App: upload a weapon/shield `.glb`
+(LanternExtractor exports these separately, in `equipment/`) → auto-resolve the hand/off-hand bone
+(or pick from a dropdown) → **position + rotation sliders** seeded from the table, updating a cheap
+re-bake preview live → generate fuses it into the watertight STL. Tests: `resolveBone`
+priority/fallback; `attachEquipment` lands a box at the expected world position on the synthetic rig.
+
+Out of scope here: texture-only armor patterns (don't show as geometry); robes/helms can reuse the
+same attach mechanism in a later pass. Known risks: weapon orientation per type (sliders mitigate),
+bone-name variance across races (picker mitigates), CoM is a centroid approximation (refine later).
 
 ### Phase 3 — Inventory import
 `/outputfile inventory` parsing + the item->appearance DB; auto-build from a real character.
@@ -354,15 +392,18 @@ Multi-part/multi-color export and paint-guide output; richer pose library.
   tradeoff rather than something a future model toggle will fix.
 - **Pose frame selection** is manual curation, not automatic.
 - **Action-pose printability** (overhangs, balance) — always add a base; warn on casting/attack.
-- **Real-world printability is unverified (open since Phase 0).** Phase 0 confirmed watertight +
-  manifold + genus-0 *automatically*, and the browser viewer was smoke-tested on a real `.glb`,
-  but **no STL has been physically sliced or printed**. Slicer behaviour, minimum wall thickness at
-  figurine scale, supports, and stand-up stability are still unconfirmed. Get a real print done as
-  early in Phase 1 as possible to close this.
+  The Phase 2A base directly addresses stand-up stability.
+- **Real-world printability is unverified (open since Phase 0).** The pipeline confirms watertight +
+  manifold + genus-0 *automatically*, and the deployed app's full flow is confirmed in-browser on a
+  real `.glb`, but **no STL has been physically sliced or printed**. Slicer behaviour, minimum wall
+  thickness at figurine scale, supports, and stand-up stability remain unconfirmed. Close this
+  opportunistically — it's the last gap a real print would settle.
 
 ---
 
-## 12. First concrete step
-Do **Phase 0** with: LanternExtractor (glTF export) -> three.js (load + pose at one frame) ->
-`manifold-3d` union (or Blender voxel remesh) -> `STLExporter` -> slice in PrusaSlicer/Lychee.
-One human, one pose, one printable STL. Everything else builds on that proven spine.
+## 12. Where things stand / next step
+Phase 0 (proven spine), Phase 0.5 (tests + CI), and Phase 1 (deployed guided MVP) are done — the
+"one human, one pose, one printable STL" spine is real and shipped as a web app. **Next concrete
+step: Phase 2A** — add the manifold-union **stability base** (`phase0/pipeline/base.js`) so figures
+stand, then Phase 2B equipment attachment. The remaining open loop across all phases is a real
+physical print (§11).
