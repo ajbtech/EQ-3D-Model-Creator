@@ -7,6 +7,7 @@ import {
   geometryToStl,
   scaleGeometryToHeight,
   resolvePose,
+  withBase,
 } from '../../phase0/pipeline/index.js';
 import { createViewer } from './scene.js';
 import racesData from '../data/races.json';
@@ -129,9 +130,19 @@ $('generate').addEventListener('click', async () => {
     const dilate = dilateRaw === '' ? undefined : Number(dilateRaw);
 
     const t0 = performance.now();
-    const { geometry, stats } = await remeshToWatertight(state.posed, { voxelSize: voxel, dilate });
+    const { geometry, manifold, stats } = await remeshToWatertight(state.posed, { voxelSize: voxel, dilate });
     const entry = currentRaceEntry();
-    const { geometry: scaled } = scaleGeometryToHeight(geometry, entry.targetHeightMm, 'y');
+
+    // Add a stability base (fused via exact manifold union) or just scale to height.
+    let scaled;
+    if ($('baseOn').checked) {
+      ({ geometry: scaled } = await withBase(manifold, {
+        targetHeightMm: entry.targetHeightMm,
+        shape: $('baseShape').value,
+      }));
+    } else {
+      ({ geometry: scaled } = scaleGeometryToHeight(geometry, entry.targetHeightMm, 'y'));
+    }
     const ms = Math.round(performance.now() - t0);
 
     scaled.computeBoundingBox();
