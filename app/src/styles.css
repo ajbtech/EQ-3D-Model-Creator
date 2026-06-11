@@ -19,7 +19,9 @@ h1 { font-size: 17px; margin: 0 0 4px; }
 
 label { display: block; margin: 6px 0; color: #c2c8d0; font-size: 12px; }
 select, input[type="number"] { width: 100%; margin-top: 4px; padding: 7px; background: #1d2128; color: #e6e8ec; border: 1px solid #353b45; border-radius: 6px; }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; }
+.check { display: flex; align-items: center; gap: 6px; }
+.check input { width: auto; margin: 0; }
 
 .filebtn { position: relative; display: block; padding: 10px; text-align: center; background: #2a2e36; border: 1px dashed #4b5563; border-radius: 8px; cursor: pointer; }
 .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

@@ -44,6 +44,15 @@
 
         <section class="step">
           <h2><span class="num">4</span> Make it printable</h2>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="baseOn" checked /> Add a base</label>
+            <label>Base shape
+              <select id="baseShape">
+                <option value="round">Round</option>
+                <option value="hex">Hex</option>
+              </select>
+            </label>
+          </div>
           <button id="generate" class="primary" disabled>Generate printable model</button>
           <button id="download" class="secondary" disabled>Download STL</button>
           <div id="stats" class="stats"></div>

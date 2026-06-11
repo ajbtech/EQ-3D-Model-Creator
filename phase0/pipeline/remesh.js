@@ -17,7 +17,7 @@ export function loadManifold() {
 }
 
 // Convert a manifold-3d Manifold into a THREE.BufferGeometry.
-function manifoldToGeometry(manifold) {
+export function manifoldToGeometry(manifold) {
   const mesh = manifold.getMesh();
   const geom = new THREE.BufferGeometry();
   // numProp is 3 for pure-position level sets.
