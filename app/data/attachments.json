@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "sources": "Bone names are the classic EQ attachment-point bones observed in LanternExtractor exports: r_point = right hand (primary weapon), l_point = left hand (secondary), shield_point = shield. Candidates are tried in order against the uploaded skeleton, with a manual bone picker as fallback. Default offsets are provisional zeros; orientation is tuned per weapon with the sliders (PLAN.md section 4).",
+  "slots": [
+    {
+      "id": "primary",
+      "label": "Weapon — right hand",
+      "boneCandidates": ["r_point", "r_hand", "fi_r"],
+      "defaultOffset": { "position": [0, 0, 0], "rotationEuler": [0, 0, 0], "scale": 1 }
+    },
+    {
+      "id": "shield",
+      "label": "Shield — off hand",
+      "boneCandidates": ["shield_point", "l_point", "fi_l"],
+      "defaultOffset": { "position": [0, 0, 0], "rotationEuler": [0, 0, 0], "scale": 1 }
+    },
+    {
+      "id": "offhand",
+      "label": "Weapon — left hand",
+      "boneCandidates": ["l_point", "fi_l"],
+      "defaultOffset": { "position": [0, 0, 0], "rotationEuler": [0, 0, 0], "scale": 1 }
+    }
+  ]
+}

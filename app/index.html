@@ -43,7 +43,36 @@
         </section>
 
         <section class="step">
-          <h2><span class="num">4</span> Make it printable</h2>
+          <h2><span class="num">4</span> Equipment <span class="opt">(optional)</span></h2>
+          <label class="filebtn small">
+            <input type="file" id="eqFile" accept=".glb,.gltf" disabled />
+            <span>Add a weapon / shield .glb…</span>
+          </label>
+          <div id="eqControls" hidden>
+            <div class="row">
+              <label>Slot
+                <select id="eqSlot"></select>
+              </label>
+              <label>Bone
+                <select id="eqBone"></select>
+              </label>
+            </div>
+            <div class="sliders">
+              <label>Pos X <input type="range" id="eqPosX" min="-2" max="2" step="0.02" value="0" /></label>
+              <label>Pos Y <input type="range" id="eqPosY" min="-2" max="2" step="0.02" value="0" /></label>
+              <label>Pos Z <input type="range" id="eqPosZ" min="-2" max="2" step="0.02" value="0" /></label>
+              <label>Rot X <input type="range" id="eqRotX" min="-180" max="180" step="2" value="0" /></label>
+              <label>Rot Y <input type="range" id="eqRotY" min="-180" max="180" step="2" value="0" /></label>
+              <label>Rot Z <input type="range" id="eqRotZ" min="-180" max="180" step="2" value="0" /></label>
+              <label>Scale <input type="range" id="eqScale" min="0.2" max="3" step="0.05" value="1" /></label>
+            </div>
+            <button id="eqRemove" class="secondary">Remove equipment</button>
+            <p class="hint">Weapons/shields export to LanternExtractor's <code>equipment/</code> folder. Nudge the sliders to seat it in the hand.</p>
+          </div>
+        </section>
+
+        <section class="step">
+          <h2><span class="num">5</span> Make it printable</h2>
           <div class="row">
             <label class="check"><input type="checkbox" id="baseOn" checked /> Add a base</label>
             <label>Base shape

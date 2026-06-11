@@ -24,6 +24,21 @@ test('poses.json is well-formed and curates at least the 5 plan poses', () => {
   }
 });
 
+test('attachments.json is well-formed with bone candidates and default offsets', () => {
+  const data = load('attachments.json');
+  assert.ok(typeof data.sources === 'string' && data.sources.length > 0, 'has a sources note');
+  assert.ok(Array.isArray(data.slots) && data.slots.length > 0, 'has slots');
+
+  for (const s of data.slots) {
+    assert.ok(s.id && typeof s.id === 'string', 'slot has an id');
+    assert.ok(s.label && typeof s.label === 'string', `slot ${s.id} has a label`);
+    assert.ok(Array.isArray(s.boneCandidates) && s.boneCandidates.length > 0, `slot ${s.id} has bone candidates`);
+    const o = s.defaultOffset;
+    assert.ok(o && Array.isArray(o.position) && o.position.length === 3, `slot ${s.id} has a position offset`);
+    assert.ok(Array.isArray(o.rotationEuler) && o.rotationEuler.length === 3, `slot ${s.id} has a rotation offset`);
+  }
+});
+
 test('races.json is well-formed with positive target heights', () => {
   const data = load('races.json');
   assert.ok(typeof data.sources === 'string' && data.sources.length > 0, 'has a sources note');

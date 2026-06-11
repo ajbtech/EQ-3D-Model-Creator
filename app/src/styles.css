@@ -25,6 +25,11 @@ select, input[type="number"] { width: 100%; margin-top: 4px; padding: 7px; backg
 
 .filebtn { position: relative; display: block; padding: 10px; text-align: center; background: #2a2e36; border: 1px dashed #4b5563; border-radius: 8px; cursor: pointer; }
 .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.opt { color: #7d8794; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.filebtn.small { padding: 7px; font-size: 12px; }
+.sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; margin: 8px 0; }
+.sliders label { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 6px; margin: 2px 0; font-size: 11px; }
+.sliders input[type="range"] { width: 100%; }
 .hint { color: #7d8794; font-size: 11px; margin: 8px 0 0; }
 .hint a { color: #7fa7d4; }
 code { background: #1a1d23; padding: 1px 4px; border-radius: 4px; font-size: 11px; }
