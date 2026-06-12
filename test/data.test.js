@@ -39,6 +39,18 @@ test('attachments.json is well-formed with bone candidates and default offsets',
   }
 });
 
+test('items.json is well-formed (id -> appearance), entries typed', () => {
+  const data = load('items.json');
+  assert.ok(typeof data.sources === 'string' && data.sources.length > 0, 'has a sources note');
+  assert.ok(data.items && typeof data.items === 'object', 'has an items map');
+  const known = new Set(['weapon1h', 'weapon2h', 'shield', 'helm', 'robe']);
+  for (const [id, e] of Object.entries(data.items)) {
+    assert.ok(/^\d+$/.test(id), `item key ${id} is a numeric id`);
+    assert.ok(typeof e.idfile === 'string' && /^IT\d+$/i.test(e.idfile), `item ${id} has an IT### idfile`);
+    assert.ok(known.has(e.type), `item ${id} has a known type`);
+  }
+});
+
 test('races.json is well-formed with positive target heights', () => {
   const data = load('races.json');
   assert.ok(typeof data.sources === 'string' && data.sources.length > 0, 'has a sources note');

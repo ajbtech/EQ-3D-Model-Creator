@@ -9,6 +9,8 @@ export { scaleGeometryToHeight } from './scale.js';
 export { resolvePose } from './poses.js';
 export { withBase } from './base.js';
 export { resolveBone, attachEquipment, detachEquipment, listBones } from './attach.js';
+export { parseInventory, equippedVisibleItems } from './inventory.js';
+export { resolveLoadout } from './loadout.js';
 
 // End-to-end Phase 0 spine: pose -> bake -> watertight remesh.
 //

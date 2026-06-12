@@ -19,6 +19,18 @@
       "label": "Weapon — left hand",
       "boneCandidates": ["l_point", "fi_l"],
       "defaultOffset": { "position": [0, 0, 0], "rotationEuler": [0, 0, 0], "scale": 1 }
+    },
+    {
+      "id": "helm",
+      "label": "Helm — head",
+      "boneCandidates": ["head_point", "he"],
+      "defaultOffset": { "position": [0, 0, 0], "rotationEuler": [0, 0, 0], "scale": 1 }
+    },
+    {
+      "id": "robe",
+      "label": "Robe — torso (best effort)",
+      "boneCandidates": ["ch", "pe"],
+      "defaultOffset": { "position": [0, 0, 0], "rotationEuler": [0, 0, 0], "scale": 1 }
     }
   ]
 }

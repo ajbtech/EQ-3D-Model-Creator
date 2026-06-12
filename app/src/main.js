@@ -12,11 +12,15 @@ import {
   attachEquipment,
   detachEquipment,
   listBones,
+  parseInventory,
+  equippedVisibleItems,
+  resolveLoadout,
 } from '../../phase0/pipeline/index.js';
 import { createViewer } from './scene.js';
 import racesData from '../data/races.json';
 import posesData from '../data/poses.json';
 import attachmentsData from '../data/attachments.json';
+import itemsData from '../data/items.json';
 
 const $ = (id) => document.getElementById(id);
 const log = (msg) => { $('status').textContent = msg; };
@@ -28,7 +32,8 @@ const state = {
   posed: null, // baked BufferGeometry for the chosen pose
   pose: null, // the active pose definition
   resolved: null, // resolved { clipName, time } for the active pose
-  equipment: null, // loaded equipment gltf.scene (attached to a bone)
+  equipment: null, // loaded equipment gltf.scene (manual single attachment)
+  equipmentFiles: new Map(), // IT code -> File (auto-build equipment folder)
   scaled: null, // remeshed + scaled geometry
   stl: null, // DataView for download
 };
@@ -144,8 +149,12 @@ $('eqSlot').innerHTML = attachmentsData.slots.map((s) => `<option value="${s.id}
 function setupEquipment() {
   $('eqFile').disabled = false;
   $('eqFile').value = '';
+  $('eqFolder').disabled = false;
+  $('invFile').disabled = false;
   $('eqControls').hidden = true;
+  $('loadout').innerHTML = '';
   state.equipment = null;
+  state.equipmentFiles = new Map();
   // Populate the bone picker from this model's actual skeleton.
   const bones = listBones(state.loaded.root);
   $('eqBone').innerHTML = bones.map((b) => `<option>${b}</option>`).join('');
@@ -217,6 +226,71 @@ $('eqRemove').addEventListener('click', () => {
   $('eqFile').value = '';
   if (state.resolved) rebake(); else viewer.show(state.loaded.root);
 });
+
+// --- Auto-build from inventory -----------------------------------------
+// Index the uploaded equipment folder by the IT### code in each filename.
+$('eqFolder').addEventListener('change', (e) => {
+  state.equipmentFiles = new Map();
+  for (const file of e.target.files) {
+    const m = file.name.match(/it(\d+)/i);
+    if (m) state.equipmentFiles.set(`IT${m[1]}`.toUpperCase(), file);
+  }
+  log(`Loaded ${state.equipmentFiles.size} equipment file(s) by IT code. Now add your inventory .txt.`);
+});
+
+async function parseGlbFile(file) {
+  const gltf = await new GLTFLoader().parseAsync(await file.arrayBuffer(), '');
+  return gltf.scene;
+}
+
+$('invFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file || !state.loaded) return;
+  const text = await file.text();
+  const equipped = equippedVisibleItems(parseInventory(text));
+  const loadout = resolveLoadout(equipped, itemsData.items, attachmentsData);
+  await autoAssemble(loadout);
+});
+
+async function autoAssemble(loadout) {
+  detachEquipment(state.loaded.root); // clean slate
+  const bones = listBones(state.loaded.root);
+  const rows = [];
+
+  for (const entry of loadout) {
+    if (!entry.matched) { rows.push({ entry, status: 'bad', note: 'unknown item' }); continue; }
+    const file = state.equipmentFiles.get(String(entry.idfile).toUpperCase());
+    if (!file) { rows.push({ entry, status: 'miss', note: `need ${entry.idfile}.glb` }); continue; }
+    const boneName = resolveBone(bones, entry.boneCandidates);
+    if (!boneName) { rows.push({ entry, status: 'bad', note: 'no bone' }); continue; }
+    try {
+      const scene = await parseGlbFile(file);
+      const o = entry.defaultOffset ?? {};
+      attachEquipment(state.loaded.root, scene, {
+        boneName,
+        slot: entry.attachSlot,
+        position: o.position ?? [0, 0, 0],
+        rotationEuler: o.rotationEuler ?? [0, 0, 0],
+        scale: o.scale ?? 1,
+      });
+      rows.push({ entry, status: 'ok', note: `${entry.idfile} → ${boneName}` });
+    } catch (err) {
+      rows.push({ entry, status: 'bad', note: err.message });
+    }
+  }
+
+  renderLoadout(rows);
+  if (state.resolved) rebake(); else viewer.show(state.loaded.root);
+  const ok = rows.filter((r) => r.status === 'ok').length;
+  log(`Auto-build: attached ${ok} of ${rows.length} equipped item(s). See the loadout list.`);
+}
+
+function renderLoadout(rows) {
+  $('loadout').innerHTML = rows.map((r) => {
+    const mark = r.status === 'ok' ? '✓' : r.status === 'miss' ? '○' : '✗';
+    return `<div class="row2"><span>${r.entry.location}: ${r.entry.name}</span><span class="${r.status}">${mark} ${r.note}</span></div>`;
+  }).join('') || '<p class="hint">No visible equipped items found.</p>';
+}
 
 // --- Generate (remesh + scale) -----------------------------------------
 $('generate').addEventListener('click', async () => {

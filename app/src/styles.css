@@ -31,6 +31,15 @@ select, input[type="number"] { width: 100%; margin-top: 4px; padding: 7px; backg
 .sliders label { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 6px; margin: 2px 0; font-size: 11px; }
 .sliders input[type="range"] { width: 100%; }
 .hint { color: #7d8794; font-size: 11px; margin: 8px 0 0; }
+.hint.or { text-align: center; margin: 12px 0 6px; }
+.autobuild { margin-bottom: 6px; }
+.autobuild summary { cursor: pointer; color: #9ad48f; font-weight: 600; }
+.autobuild .filebtn { margin-top: 8px; }
+.loadout { margin-top: 8px; font-family: ui-monospace, monospace; font-size: 11px; }
+.loadout .row2 { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px solid #23272f; }
+.loadout .ok { color: #9ad48f; }
+.loadout .miss { color: #e0a96d; }
+.loadout .bad { color: #d98a8a; }
 .hint a { color: #7fa7d4; }
 code { background: #1a1d23; padding: 1px 4px; border-radius: 4px; font-size: 11px; }
 

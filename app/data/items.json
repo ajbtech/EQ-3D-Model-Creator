@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "sources": "item id -> appearance (idfile = the IT### graphic the client uses) + type, for the inventory auto-assembler (PLAN.md sections 3.2, 7 table 5). STARTER STUB: the few entries below are PROVISIONAL and need verification/population from EQEmu / P99 item data (the items table's `idfile` column). Items not in this table are surfaced in the UI as 'unmatched' rather than guessed, so a small table is safe to ship and grow.",
+  "items": {
+    "5081": { "idfile": "IT63", "type": "weapon1h", "name": "Fine Steel Long Sword", "provisional": true },
+    "2345": { "idfile": "IT200", "type": "shield", "name": "Large Wooden Shield", "provisional": true },
+    "999": { "idfile": "IT637", "type": "helm", "name": "Iron Helm", "provisional": true },
+    "888": { "idfile": "IT540", "type": "robe", "name": "Robe", "provisional": true }
+  }
+}

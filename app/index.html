@@ -44,6 +44,22 @@
 
         <section class="step">
           <h2><span class="num">4</span> Equipment <span class="opt">(optional)</span></h2>
+
+          <details class="autobuild">
+            <summary>Auto-build from inventory</summary>
+            <p class="hint">Upload your whole extracted <code>equipment/</code> folder of <code>IT###.glb</code> files, then your <code>/outputfile inventory</code> text — the app attaches what you have equipped.</p>
+            <label class="filebtn small">
+              <input type="file" id="eqFolder" accept=".glb,.gltf" multiple disabled />
+              <span>Equipment .glb files…</span>
+            </label>
+            <label class="filebtn small">
+              <input type="file" id="invFile" accept=".txt,.text" disabled />
+              <span>inventory .txt…</span>
+            </label>
+            <div id="loadout" class="loadout"></div>
+          </details>
+
+          <p class="hint or">— or add one piece manually —</p>
           <label class="filebtn small">
             <input type="file" id="eqFile" accept=".glb,.gltf" disabled />
             <span>Add a weapon / shield .glb…</span>

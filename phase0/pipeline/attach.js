@@ -37,10 +37,13 @@ function findBone(root, name) {
 //   rotationEuler : [x,y,z] radians.
 //   scale         : uniform scale (number) or [x,y,z].
 //
-// Re-attaching replaces any previous attachment (for live slider tuning). Returns
-// the holder Object3D.
+// Each attachment is tagged with a `slot` so several can coexist (weapon + shield
+// + helm) while re-attaching one slot replaces only that slot -- the inventory
+// auto-assembler attaches many at once, and the manual tuner re-attaches one live.
+// `slot` defaults to 'default' (the single-attachment behaviour). Returns the holder.
 export function attachEquipment(characterRoot, equipmentRoot, {
   boneName,
+  slot = 'default',
   position = [0, 0, 0],
   rotationEuler = [0, 0, 0],
   scale = 1,
@@ -48,12 +51,13 @@ export function attachEquipment(characterRoot, equipmentRoot, {
   const bone = findBone(characterRoot, boneName);
   if (!bone) throw new Error(`attachEquipment: bone "${boneName}" not found in character`);
 
-  // Remove any prior attachment so tuning doesn't stack copies.
-  detachEquipment(characterRoot);
+  // Replace only this slot's prior attachment so tuning doesn't stack copies.
+  detachEquipment(characterRoot, slot);
 
   const holder = new THREE.Object3D();
-  holder.name = '__equipment__';
+  holder.name = `__equipment_${slot}__`;
   holder.userData[ATTACHMENT_FLAG] = true;
+  holder.userData.equipmentSlot = slot;
   holder.position.fromArray(position);
   holder.rotation.set(rotationEuler[0], rotationEuler[1], rotationEuler[2]);
   if (Array.isArray(scale)) holder.scale.fromArray(scale);
@@ -64,11 +68,14 @@ export function attachEquipment(characterRoot, equipmentRoot, {
   return holder;
 }
 
-// Remove every equipment attachment from a character root.
-export function detachEquipment(characterRoot) {
+// Remove equipment attachments. With a `slot`, removes only that slot; otherwise
+// removes every attachment.
+export function detachEquipment(characterRoot, slot) {
   const toRemove = [];
   characterRoot.traverse((o) => {
-    if (o.userData[ATTACHMENT_FLAG]) toRemove.push(o);
+    if (o.userData[ATTACHMENT_FLAG] && (slot === undefined || o.userData.equipmentSlot === slot)) {
+      toRemove.push(o);
+    }
   });
   for (const o of toRemove) o.parent?.remove(o);
 }

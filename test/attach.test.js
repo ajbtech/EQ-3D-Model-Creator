@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { resolveBone, attachEquipment } from '../phase0/pipeline/attach.js';
+import { resolveBone, attachEquipment, detachEquipment } from '../phase0/pipeline/attach.js';
 
 test('resolveBone returns the first matching candidate (case-insensitive)', () => {
   const bones = ['ROOT', 'Spine', 'r_hand', 'l_hand'];
@@ -47,6 +47,27 @@ test('attachEquipment replaces a previous attachment rather than stacking', () =
   let attachments = 0;
   root.traverse((o) => { if (o.userData.isEquipmentAttachment) attachments++; });
   assert.equal(attachments, 1, 're-attaching replaces the previous holder');
+});
+
+test('attachEquipment supports multiple slots coexisting, replacing per slot', () => {
+  const root = new THREE.Object3D();
+  for (const name of ['r_point', 'shield_point']) {
+    const b = new THREE.Bone();
+    b.name = name;
+    root.add(b);
+  }
+  const eq = () => { const o = new THREE.Object3D(); o.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1))); return o; };
+
+  attachEquipment(root, eq(), { boneName: 'r_point', slot: 'primary' });
+  attachEquipment(root, eq(), { boneName: 'shield_point', slot: 'shield' });
+  const count = () => { let n = 0; root.traverse((o) => { if (o.userData.isEquipmentAttachment) n++; }); return n; };
+  assert.equal(count(), 2, 'weapon + shield coexist');
+
+  attachEquipment(root, eq(), { boneName: 'r_point', slot: 'primary' });
+  assert.equal(count(), 2, 're-attaching the primary slot replaces only itself');
+
+  detachEquipment(root, 'primary');
+  assert.equal(count(), 1, 'detaching one slot leaves the other');
 });
 
 test('attachEquipment throws when the bone is missing', () => {
