@@ -43,6 +43,69 @@
       "clipCandidates": ["Cast Push Forward", "Cast Pull Back", "Raise and Loop Arms"],
       "frame": 0.5,
       "notes": "Arms out; dramatic but the hardest to print (overhangs, balance)."
+    },
+    {
+      "id": "idle",
+      "label": "Idle (arms at sides)",
+      "clipCandidates": ["Idle", "Stand (Arms at Sides)", "Stand"],
+      "frame": 0.5,
+      "notes": "Relaxed neutral stance; the most compact, lowest-risk silhouette."
+    },
+    {
+      "id": "sitting",
+      "label": "Sitting",
+      "clipCandidates": ["Sitting", "Sit"],
+      "frame": 1.0,
+      "notes": "Seated; very stable footprint but needs a flat surface beneath it."
+    },
+    {
+      "id": "kneeling",
+      "label": "Kneeling",
+      "clipCandidates": ["Kneel", "Kneeling"],
+      "frame": 1.0,
+      "notes": "One knee down; broad, stable contact with the ground."
+    },
+    {
+      "id": "combat-2h",
+      "label": "Two-handed swing",
+      "clipCandidates": ["Combat 2H Slash", "Combat 2H Blunt", "Combat 1H Slash"],
+      "frame": 0.4,
+      "notes": "Big two-handed wind-up; wide pose, almost always wants a base."
+    },
+    {
+      "id": "kick",
+      "label": "Kick",
+      "clipCandidates": ["Combat Kick", "Flying Kick", "Round Kick"],
+      "frame": 0.55,
+      "notes": "Dynamic one-leg pose; needs a base to stand — high tip risk."
+    },
+    {
+      "id": "archery",
+      "label": "Archery",
+      "clipCandidates": ["Combat Archery", "Archery"],
+      "frame": 0.7,
+      "notes": "Drawn bow; arms span wide, watch the string/arrow as thin features."
+    },
+    {
+      "id": "cheering",
+      "label": "Cheering",
+      "clipCandidates": ["Cheer", "Cheering"],
+      "frame": 0.6,
+      "notes": "Both arms up; tall overhangs but a fun, expressive figurine."
+    },
+    {
+      "id": "mourning",
+      "label": "Mourning",
+      "clipCandidates": ["Mourn", "Mourning"],
+      "frame": 0.6,
+      "notes": "Head bowed, hands up; compact and self-supporting."
+    },
+    {
+      "id": "nodding",
+      "label": "Nodding",
+      "clipCandidates": ["Nod", "Agree"],
+      "frame": 0.5,
+      "notes": "Subtle head tilt; reads as a calm portrait pose, very printable."
     }
   ]
 }

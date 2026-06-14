@@ -44,6 +44,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .poses button.active { border-color: #3b82f6; background: #24314a; }
 .poses button:disabled { opacity: 0.4; }
 
+.parts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.parts:empty { display: none; }
+.mono { font-family: ui-monospace, monospace; font-size: 11px; color: #9fb3c8; }
 .stats { font-family: ui-monospace, monospace; font-size: 11px; color: #9ad48f; margin-top: 8px; white-space: pre-wrap; }
 .advanced, .howto { margin-top: 12px; font-size: 12px; color: #aeb6c0; }
 .advanced summary, .howto summary { cursor: pointer; color: #97a0ad; }
