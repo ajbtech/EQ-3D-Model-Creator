@@ -22,19 +22,40 @@ export async function withBase(manifold, {
   diameterFactor = 1.25,
   baseHeightMm,
 } = {}) {
-  const { Manifold } = await loadManifold();
-
-  // 1. Scale the figure to the requested height (uniform).
   let figure = manifold;
+  let factor = 1;
   if (targetHeightMm) {
-    const bb = figure.boundingBox();
-    const height = bb.max[1] - bb.min[1];
-    if (!(height > 0)) throw new Error('withBase: figure has zero height');
-    const s = targetHeightMm / height;
-    figure = figure.scale([s, s, s]);
+    ({ manifold: figure, factor } = await scaleManifoldToHeight(manifold, targetHeightMm));
   }
 
-  // 2. Measure the scaled figure: footprint extent + min-Y + XZ centroid (CoM proxy).
+  const base = await baseManifoldFor(figure, { shape, diameterFactor, baseHeightMm });
+  const fused = figure.add(base);
+  return { manifold: fused, geometry: manifoldToGeometry(fused), factor };
+}
+
+// Uniformly scale a watertight Manifold so its Y-extent equals targetHeightMm.
+// Returns { manifold, factor } so the same factor can be applied to sibling parts
+// (equipment) for multi-part export, keeping everything aligned for assembly.
+export async function scaleManifoldToHeight(manifold, targetHeightMm) {
+  const bb = manifold.boundingBox();
+  const height = bb.max[1] - bb.min[1];
+  if (!(height > 0)) throw new Error('scaleManifoldToHeight: figure has zero height');
+  const factor = targetHeightMm / height;
+  return { manifold: manifold.scale([factor, factor, factor]), factor };
+}
+
+// Build a stability base/plinth seated just under the feet of an (already-scaled)
+// figure manifold, centred on its vertex centroid in XZ. Returns the base Manifold
+// alone (not fused), so callers can either union it in (single STL, see withBase) or
+// export it as its own part (multi-part export).
+export async function baseManifoldFor(figure, {
+  shape = 'round',
+  diameterFactor = 1.25,
+  baseHeightMm,
+} = {}) {
+  const { Manifold } = await loadManifold();
+
+  // Measure the figure: footprint extent + min-Y + XZ centroid (CoM proxy).
   const bb = figure.boundingBox();
   const sizeX = bb.max[0] - bb.min[0];
   const sizeZ = bb.max[2] - bb.min[2];
@@ -53,18 +74,14 @@ export async function withBase(manifold, {
   cx /= n;
   cz /= n;
 
-  // 3. Size the base.
   const radius = 0.5 * Math.max(sizeX, sizeZ) * diameterFactor;
   const height = baseHeightMm ?? Math.max(1.5, footHeight * 0.05);
   const overlap = Math.max(0.3, height * 0.2); // intersect the feet for a robust union
   const segments = shape === 'hex' ? 6 : 64;
 
-  // 4. Build the base: a cylinder is created along Z, so rotate it to stand on Y,
-  //    then seat its top just above the figure's feet, centred on the centroid.
-  const base = Manifold.cylinder(height, radius, radius, segments, false)
+  // A cylinder is created along Z, so rotate it to stand on Y, then seat its top just
+  // above the figure's feet, centred on the centroid.
+  return Manifold.cylinder(height, radius, radius, segments, false)
     .rotate([-90, 0, 0]) // Z-axis cylinder -> Y-up
     .translate([cx, minY + overlap - height, cz]);
-
-  const fused = figure.add(base);
-  return { manifold: fused, geometry: manifoldToGeometry(fused) };
 }

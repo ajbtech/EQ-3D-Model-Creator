@@ -69,5 +69,20 @@ export function createViewer(container) {
     show(mesh);
   }
 
-  return { show, showGeometry, resize };
+  // Show several parts together (multi-part export preview), each tinted so the body,
+  // base and equipment read as the separate pieces they will print as.
+  const PART_COLORS = [0x9ad48f, 0xb0853e, 0xd47f9a, 0x7fa7d4, 0xd4c97f];
+  function showParts(parts) {
+    const group = new THREE.Group();
+    parts.forEach((part, i) => {
+      const color = part.color ?? PART_COLORS[i % PART_COLORS.length];
+      group.add(new THREE.Mesh(
+        part.geometry,
+        new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05 }),
+      ));
+    });
+    show(group);
+  }
+
+  return { show, showGeometry, showParts, resize };
 }

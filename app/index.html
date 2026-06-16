@@ -40,6 +40,16 @@
           <div id="poses" class="poses">
             <p class="hint">Upload a model to choose a pose.</p>
           </div>
+          <details class="advanced" id="anyClip" hidden>
+            <summary>Any animation frame</summary>
+            <p class="hint">Pose from any clip in your model — not just the curated set above.</p>
+            <label>Clip
+              <select id="clipSelect"></select>
+            </label>
+            <label>Frame <span id="clipFrameVal" class="mono"></span>
+              <input type="range" id="clipFrame" min="0" max="1" step="0.01" value="0.5" />
+            </label>
+          </details>
         </section>
 
         <section class="step">
@@ -82,8 +92,11 @@
               </select>
             </label>
           </div>
+          <label class="check"><input type="checkbox" id="multiPart" /> Export as separate parts (body / base / equipment)</label>
+          <p class="hint">Off: one fused, glue-free solid. On: each piece is its own watertight STL — print the weapon or base in a different colour, then assemble. All parts share one scale so they line up.</p>
           <button id="generate" class="primary" disabled>Generate printable model</button>
           <button id="download" class="secondary" disabled>Download STL</button>
+          <div id="parts" class="parts"></div>
           <div id="stats" class="stats"></div>
 
           <details class="advanced">

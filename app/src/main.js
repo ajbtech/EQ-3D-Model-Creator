@@ -8,6 +8,7 @@ import {
   scaleGeometryToHeight,
   resolvePose,
   withBase,
+  runMultiPartPipeline,
   resolveBone,
   attachEquipment,
   detachEquipment,
@@ -31,6 +32,7 @@ const state = {
   equipment: null, // loaded equipment gltf.scene (attached to a bone)
   scaled: null, // remeshed + scaled geometry
   stl: null, // DataView for download
+  parts: null, // multi-part export: [{ name, stl }]
 };
 
 // --- Race / gender pickers ---------------------------------------------
@@ -73,6 +75,8 @@ $('file').addEventListener('change', async (e) => {
     $('generate').disabled = true;
     $('download').disabled = true;
     $('stats').textContent = '';
+    state.parts = null;
+    $('parts').innerHTML = '';
 
     viewer.show(state.loaded.root);
     buildPoseButtons();
@@ -105,15 +109,55 @@ function buildPoseButtons() {
     }
     container.appendChild(btn);
   }
+  buildAnyClipPicker();
+}
+
+function clearPoseSelection() {
+  [...$('poses').children].forEach((b) => b.classList.remove('active'));
 }
 
 function selectPose(pose, resolved, btn) {
-  [...$('poses').children].forEach((b) => b.classList.remove('active'));
+  clearPoseSelection();
   btn.classList.add('active');
   state.pose = pose;
   state.resolved = resolved;
   rebake();
 }
+
+// Advanced picker: pose from ANY clip in the model at ANY frame, beyond the curated
+// set. Reuses the same bake path -- the frame slider maps 0..1 across the clip's
+// duration (PLAN.md section 5).
+function buildAnyClipPicker() {
+  const clips = state.loaded.animations;
+  const wrap = $('anyClip');
+  if (!clips.length) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  $('clipSelect').innerHTML = clips
+    .map((c, i) => `<option value="${i}">${c.name || `clip ${i}`}</option>`)
+    .join('');
+  updateClipFrameLabel();
+}
+
+function updateClipFrameLabel() {
+  const clip = state.loaded?.animations[Number($('clipSelect').value)];
+  const f = Number($('clipFrame').value);
+  $('clipFrameVal').textContent = clip ? `${(f * (clip.duration || 0)).toFixed(2)}s / ${(clip.duration || 0).toFixed(2)}s` : '';
+}
+
+function selectAnyClip() {
+  if (!state.loaded) return;
+  const clip = state.loaded.animations[Number($('clipSelect').value)];
+  if (!clip) return;
+  const frame = Number($('clipFrame').value);
+  updateClipFrameLabel();
+  clearPoseSelection();
+  state.pose = { id: `clip-${(clip.name || 'custom').replace(/\s+/g, '-').toLowerCase()}`, label: clip.name || 'custom clip' };
+  state.resolved = { clipName: clip.name, time: frame * (clip.duration || 0) };
+  rebake();
+}
+
+$('clipSelect').addEventListener('change', selectAnyClip);
+$('clipFrame').addEventListener('input', selectAnyClip);
 
 // Bake the active pose (with any attached equipment baked in) and preview it.
 function rebake() {
@@ -127,6 +171,8 @@ function rebake() {
     viewer.showGeometry(geometry, 0x7fa7d4);
     $('generate').disabled = false;
     $('download').disabled = true;
+    state.parts = null;
+    $('parts').innerHTML = '';
     log(`Posed as “${state.pose.label}” (clip: ${state.resolved.clipName}).\nReady to generate the printable model.`);
   } catch (err) {
     console.error(err);
@@ -229,37 +275,11 @@ $('generate').addEventListener('click', async () => {
     const voxel = Number($('voxel').value) || undefined;
     const dilateRaw = $('dilate').value.trim();
     const dilate = dilateRaw === '' ? undefined : Number(dilateRaw);
-
-    const t0 = performance.now();
-    const { geometry, manifold, stats } = await remeshToWatertight(state.posed, { voxelSize: voxel, dilate });
-    const entry = currentRaceEntry();
-
-    // Add a stability base (fused via exact manifold union) or just scale to height.
-    let scaled;
-    if ($('baseOn').checked) {
-      ({ geometry: scaled } = await withBase(manifold, {
-        targetHeightMm: entry.targetHeightMm,
-        shape: $('baseShape').value,
-      }));
+    if ($('multiPart').checked) {
+      await generateMultiPart(voxel, dilate);
     } else {
-      ({ geometry: scaled } = scaleGeometryToHeight(geometry, entry.targetHeightMm, 'y'));
+      await generateSingle(voxel, dilate);
     }
-    const ms = Math.round(performance.now() - t0);
-
-    scaled.computeBoundingBox();
-    const size = new THREE.Vector3();
-    scaled.boundingBox.getSize(size);
-
-    state.scaled = scaled;
-    state.stl = geometryToStl(scaled, { binary: true });
-    viewer.showGeometry(scaled, 0x9ad48f);
-    $('download').disabled = false;
-
-    $('stats').textContent =
-      `watertight: ${stats.watertight}  (genus ${stats.genus})\n` +
-      `triangles: ${stats.triangles}\n` +
-      `height: ${size.y.toFixed(1)} mm  (footprint ${size.x.toFixed(1)} × ${size.z.toFixed(1)} mm)`;
-    log(`Done in ${ms} ms. Download your STL below.`);
   } catch (err) {
     console.error(err);
     log(`Generate failed: ${err.message}`);
@@ -268,15 +288,108 @@ $('generate').addEventListener('click', async () => {
   }
 });
 
-// --- Download -----------------------------------------------------------
-$('download').addEventListener('click', () => {
-  if (!state.stl) return;
+async function generateSingle(voxel, dilate) {
+  resetParts();
+  const t0 = performance.now();
+  const { geometry, manifold, stats } = await remeshToWatertight(state.posed, { voxelSize: voxel, dilate });
   const entry = currentRaceEntry();
-  const name = `${entry ? entry.code : 'model'}-${state.pose ? state.pose.id : 'pose'}.stl`;
-  const blob = new Blob([state.stl.buffer ?? state.stl], { type: 'model/stl' });
+
+  // Add a stability base (fused via exact manifold union) or just scale to height.
+  let scaled;
+  if ($('baseOn').checked) {
+    ({ geometry: scaled } = await withBase(manifold, {
+      targetHeightMm: entry.targetHeightMm,
+      shape: $('baseShape').value,
+    }));
+  } else {
+    ({ geometry: scaled } = scaleGeometryToHeight(geometry, entry.targetHeightMm, 'y'));
+  }
+  const ms = Math.round(performance.now() - t0);
+
+  scaled.computeBoundingBox();
+  const size = new THREE.Vector3();
+  scaled.boundingBox.getSize(size);
+
+  state.scaled = scaled;
+  state.stl = geometryToStl(scaled, { binary: true });
+  viewer.showGeometry(scaled, 0x9ad48f);
+  $('download').disabled = false;
+
+  $('stats').textContent =
+    `watertight: ${stats.watertight}  (genus ${stats.genus})\n` +
+    `triangles: ${stats.triangles}\n` +
+    `height: ${size.y.toFixed(1)} mm  (footprint ${size.x.toFixed(1)} × ${size.z.toFixed(1)} mm)`;
+  log(`Done in ${ms} ms. Download your STL below.`);
+}
+
+// Multi-part: remesh body / base / equipment into separate, co-scaled watertight STLs
+// (PLAN.md Phase 4), each with its own download button.
+async function generateMultiPart(voxel, dilate) {
+  $('download').disabled = true;
+  state.stl = null;
+  const entry = currentRaceEntry();
+  const t0 = performance.now();
+  const { parts } = await runMultiPartPipeline({
+    root: state.loaded.root,
+    animations: state.loaded.animations,
+    clipName: state.resolved.clipName,
+    time: state.resolved.time,
+    voxelSize: voxel,
+    dilate,
+    targetHeightMm: entry.targetHeightMm,
+    base: $('baseOn').checked ? { shape: $('baseShape').value } : false,
+  });
+  const ms = Math.round(performance.now() - t0);
+
+  const overall = new THREE.Box3();
+  for (const p of parts) {
+    p.geometry.computeBoundingBox();
+    overall.union(p.geometry.boundingBox);
+  }
+  const size = overall.getSize(new THREE.Vector3());
+
+  state.parts = parts.map((p) => ({ name: p.name, stl: geometryToStl(p.geometry, { binary: true }) }));
+  viewer.showParts(parts);
+  renderPartButtons();
+
+  $('stats').textContent =
+    `${parts.length} parts: ${parts.map((p) => p.name).join(', ')}\n` +
+    `assembled height: ${size.y.toFixed(1)} mm  (footprint ${size.x.toFixed(1)} × ${size.z.toFixed(1)} mm)`;
+  log(`Done in ${ms} ms. Download each part below — they share one scale, so they line up when assembled.`);
+}
+
+function resetParts() {
+  state.parts = null;
+  $('parts').innerHTML = '';
+}
+
+function renderPartButtons() {
+  const container = $('parts');
+  container.innerHTML = '';
+  const entry = currentRaceEntry();
+  const prefix = `${entry ? entry.code : 'model'}-${state.pose ? state.pose.id : 'pose'}`;
+  state.parts.forEach((part) => {
+    const btn = document.createElement('button');
+    btn.className = 'secondary';
+    btn.textContent = `Download ${part.name}.stl`;
+    btn.addEventListener('click', () => downloadStl(part.stl, `${prefix}-${part.name}.stl`));
+    container.appendChild(btn);
+  });
+}
+
+// --- Download -----------------------------------------------------------
+function downloadStl(stl, name) {
+  const blob = new Blob([stl.buffer ?? stl], { type: 'model/stl' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+$('download').addEventListener('click', () => {
+  if (!state.stl) return;
+  const entry = currentRaceEntry();
+  const name = `${entry ? entry.code : 'model'}-${state.pose ? state.pose.id : 'pose'}.stl`;
+  downloadStl(state.stl, name);
 });
