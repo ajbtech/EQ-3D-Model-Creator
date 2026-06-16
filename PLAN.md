@@ -386,7 +386,18 @@ Multi-part/multi-color export and paint-guide output; richer pose library.
   on **thin geometry** (weapon blades) and acceptable speed at figurine-useful voxel resolution —
   bounded by `manifold-3d`'s serial WASM build. Fallback is the **local companion / documented
   Blender recipe** (serverless is rejected). Phase 0's weapon spike is the direct test of both.
-- **Weapon attachment orientation** — fiddly per weapon type; expect manual tuning.
+- **Weapon attachment orientation** — fiddly per weapon type; expect manual tuning. **⚠️ OPEN TODO
+  (Phase 2B):** the attach engine + manual position/rotation/scale sliders shipped and were validated
+  with a *synthetic* stand-in weapon, but `app/data/attachments.json` still carries **provisional
+  zero default offsets** — no real extracted weapon glTF has been tuned yet. Attach a real `gequip`
+  weapon, dial in the orientation with the sliders, and commit sensible per-class (1H/2H/shield)
+  defaults so weapons seat correctly out of the box.
+- **Item → appearance database is a stub.** **⚠️ OPEN TODO (Phase 3):** the inventory
+  auto-assembler (parse → resolve → attach) shipped and is tested, but `app/data/items.json` only
+  carries a handful of **provisional** entries. The feature only auto-attaches items present in that
+  table (everything else is surfaced as "unmatched"), so it's safe but low-coverage. Populate it
+  from EQEmu / P99 item data — map item `id → idfile` (the `IT###` graphic) + type for visible
+  weapons/shields/helms/robes. This is the single biggest lever on how well auto-build works.
 - **Classic armor is texture-only** — "armor" barely shows in single-color geometry; set
   expectations up front. Since Luclin models are out of scope, this is a permanent, accepted
   tradeoff rather than something a future model toggle will fix.
